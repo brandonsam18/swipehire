@@ -1,12 +1,20 @@
+import { burstConfetti, showToast } from "./celebrate.js";
+import { renderDeck, swipeTopCard } from "./deck.js";
+import { ACHIEVEMENTS, FRESH_POSTING_DAYS, XP_PER_SAVE, applicationXp, computeProgress } from "./game.js";
 import { METRO_AREAS, STATE_NAMES, isRemoteUs, metroIdOf, stateCodeOf } from "./locations.js";
 import { guessCompanyDomain, logoUrl } from "./logos.js";
 import { ROLES, roleIdsOf } from "./roles.js";
 
 const LISTINGS_URL =
   "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json";
-const APPLIED_STORAGE_KEY = "appliedPostings";
+const STORAGE_KEYS = {
+  applied: "appliedPostings",
+  saved: "savedPostings",
+  passed: "passedPostings",
+  progress: "gameProgress",
+  viewMode: "viewMode",
+};
 const PAGE_SIZE = 50;
-const NEW_POSTING_DAYS = 3;
 const SKELETON_CARD_COUNT = 6;
 // Smaller icons are blurry when scaled up, so those companies keep their letter.
 const MIN_LOGO_PIXELS = 32;
@@ -20,40 +28,92 @@ const locationSelect = document.getElementById("location-select");
 const roleSelect = document.getElementById("role-select");
 const degreeSelect = document.getElementById("degree-select");
 const termSelect = document.getElementById("term-select");
+const modeTabs = document.querySelectorAll(".mode-tab");
+const discoverView = document.getElementById("discover-view");
+const browseView = document.getElementById("browse-view");
+const deck = document.getElementById("deck");
+const deckCount = document.getElementById("deck-count");
+const deckButtons = document.querySelectorAll(".deck-button[data-direction]");
+const undoButton = document.getElementById("undo-button");
 const statusTabs = document.querySelectorAll(".tab");
-const appliedTotal = document.getElementById("applied-total");
 const summary = document.getElementById("summary");
 const message = document.getElementById("message");
+const listMessage = document.getElementById("list-message");
 const postingList = document.getElementById("posting-list");
 const showMoreButton = document.getElementById("show-more-button");
+const trophyDialog = document.getElementById("trophy-dialog");
+
+function loadJson(key, fallback) {
+  try {
+    return JSON.parse(localStorage.getItem(key)) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveJson(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    showToast("Couldn't save your progress in this browser (private mode?)", "error");
+  }
+}
+
+// Older versions stored only the date an application was marked.
+function loadApplications() {
+  const stored = loadJson(STORAGE_KEYS.applied, {});
+  return Object.fromEntries(
+    Object.entries(stored).map(([id, value]) => [id, typeof value === "string" ? { at: value } : value]),
+  );
+}
 
 let allPostings = [];
-let appliedPostings = loadAppliedPostings();
+let postingsLoaded = false;
+// Each maps posting id -> what happened: applications store { at, fresh, roleIds, metroIds };
+// saved and passed store the ISO date.
+const appliedPostings = loadApplications();
+const savedPostings = loadJson(STORAGE_KEYS.saved, {});
+const passedPostings = loadJson(STORAGE_KEYS.passed, {});
+let viewMode = loadJson(STORAGE_KEYS.viewMode, "discover") === "browse" ? "browse" : "discover";
 let statusFilter = "all";
 let visibleCount = PAGE_SIZE;
+const undoStack = [];
+let progress = null;
 
-// Maps id -> ISO date string of when the user marked it applied.
-function loadAppliedPostings() {
-  try {
-    return JSON.parse(localStorage.getItem(APPLIED_STORAGE_KEY)) ?? {};
-  } catch {
-    return {};
+// ---------- Helpers ----------
+
+function createElement(tag, className, text) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  if (text !== undefined) element.textContent = text;
+  return element;
+}
+
+function formatDate(date) {
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function postingAgeDays(posting) {
+  return (Date.now() / 1000 - posting.date_posted) / 86400;
+}
+
+function formatPostedAge(posting) {
+  const days = Math.floor(postingAgeDays(posting));
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 30) return `${days}d ago`;
+  return formatDate(new Date(posting.date_posted * 1000));
+}
+
+function avatarColor(companyName) {
+  let hash = 0;
+  for (const character of companyName) {
+    hash = (hash * 31 + character.charCodeAt(0)) | 0;
   }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-function saveAppliedPostings() {
-  try {
-    localStorage.setItem(APPLIED_STORAGE_KEY, JSON.stringify(appliedPostings));
-  } catch {
-    showMessage("Couldn't save your applications in this browser (private mode?).", true);
-  }
-}
-
-function showMessage(text, isError = false) {
-  message.textContent = text;
-  message.classList.toggle("error", isError);
-  message.hidden = false;
-}
+// ---------- Filters ----------
 
 function matchesFilters(posting) {
   const query = searchInput.value.trim().toLowerCase();
@@ -74,40 +134,27 @@ function matchesFilters(posting) {
   if (degreeSelect.value !== "all" && posting.degrees.length > 0 && !posting.degrees.includes(degreeSelect.value)) {
     return false;
   }
-
-  const isApplied = posting.id in appliedPostings;
-  if (statusFilter === "applied" && !isApplied) return false;
-  if (statusFilter === "not-applied" && isApplied) return false;
-
   return true;
 }
 
-function formatDate(date) {
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+function matchesStatus(posting) {
+  if (statusFilter === "applied") return posting.id in appliedPostings;
+  if (statusFilter === "saved") return posting.id in savedPostings && !(posting.id in appliedPostings);
+  return true;
 }
 
-function formatPostedAge(postedSeconds) {
-  const days = Math.floor((Date.now() / 1000 - postedSeconds) / 86400);
-  if (days <= 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 30) return `${days}d ago`;
-  return formatDate(new Date(postedSeconds * 1000));
+// Postings you haven't applied to, saved, or passed on yet.
+function isUnseen(posting) {
+  return !(posting.id in appliedPostings) && !(posting.id in savedPostings) && !(posting.id in passedPostings);
 }
 
-function avatarColor(companyName) {
-  let hash = 0;
-  for (const character of companyName) {
-    hash = (hash * 31 + character.charCodeAt(0)) | 0;
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+function updateFilterCount() {
+  const activeCount = [roleSelect, locationSelect, degreeSelect, termSelect].filter((select) => select.value !== "all").length;
+  activeFilterCount.textContent = String(activeCount);
+  activeFilterCount.hidden = activeCount === 0;
 }
 
-function createElement(tag, className, text) {
-  const element = document.createElement(tag);
-  if (className) element.className = className;
-  if (text !== undefined) element.textContent = text;
-  return element;
-}
+// ---------- Posting pieces shared by cards and list ----------
 
 // Colored first letter, replaced by the company's logo once it loads.
 function createAvatar(posting) {
@@ -149,18 +196,7 @@ const SPONSORSHIP_TAGS = {
   "Offers Sponsorship": "Sponsors visas",
 };
 
-function createPostingItem(posting) {
-  const appliedDate = appliedPostings[posting.id];
-  const item = createElement("li", "posting");
-  item.classList.toggle("applied", Boolean(appliedDate));
-
-  const avatar = createAvatar(posting);
-
-  const info = createElement("div", "posting-info");
-  const heading = createElement("div", "posting-heading");
-  heading.append(createElement("h2", "title", posting.title));
-  info.append(createElement("p", "company", posting.company_name), heading);
-
+function createTags(posting) {
   const tags = createElement("div", "tags");
   const locationText =
     posting.locations.length > 2
@@ -177,33 +213,263 @@ function createPostingItem(posting) {
   }
   const sponsorshipText = SPONSORSHIP_TAGS[posting.sponsorship];
   if (sponsorshipText) tags.append(createTag(sponsorshipText, "tag-warning"));
-  const ageDays = (Date.now() / 1000 - posting.date_posted) / 86400;
-  if (ageDays < NEW_POSTING_DAYS) tags.append(createTag("New", "tag-new"));
-  info.append(tags);
+  if (postingAgeDays(posting) < FRESH_POSTING_DAYS) tags.append(createTag("✨ Fresh · +25 XP", "tag-new"));
+  return tags;
+}
 
-  const actions = createElement("div", "posting-actions");
-  actions.append(createElement("span", "posted", formatPostedAge(posting.date_posted)));
-
-  const applyLink = createElement("a", "button button-secondary", "Apply ↗");
+function createApplyLink(posting, className) {
+  const applyLink = createElement("a", className, "Apply ↗");
   applyLink.href = posting.url;
   applyLink.target = "_blank";
   applyLink.rel = "noopener";
   applyLink.setAttribute("aria-label", `Apply to ${posting.title} at ${posting.company_name} (opens in a new tab)`);
+  return applyLink;
+}
+
+// ---------- Actions ----------
+
+function persistActivity() {
+  saveJson(STORAGE_KEYS.applied, appliedPostings);
+  saveJson(STORAGE_KEYS.saved, savedPostings);
+  saveJson(STORAGE_KEYS.passed, passedPostings);
+}
+
+function markApplied(posting) {
+  const application = {
+    at: new Date().toISOString(),
+    fresh: postingAgeDays(posting) < FRESH_POSTING_DAYS,
+    roleIds: [...posting.roleIds],
+    metroIds: [...posting.metroIds],
+  };
+  appliedPostings[posting.id] = application;
+  showToast(`✓ Applied to ${posting.company_name}  +${applicationXp(application)} XP`, "xp");
+}
+
+function markSaved(posting) {
+  savedPostings[posting.id] = new Date().toISOString();
+  showToast(`★ Saved ${posting.company_name}  +${XP_PER_SAVE} XP`, "xp");
+}
+
+function afterActivityChange() {
+  persistActivity();
+  render();
+  updateGame({ celebrate: true });
+}
+
+function toggleApplied(posting) {
+  if (posting.id in appliedPostings) {
+    delete appliedPostings[posting.id];
+  } else {
+    markApplied(posting);
+  }
+  afterActivityChange();
+}
+
+function toggleSaved(posting) {
+  if (posting.id in savedPostings) {
+    delete savedPostings[posting.id];
+  } else {
+    markSaved(posting);
+  }
+  afterActivityChange();
+}
+
+const SWIPE_ACTIONS = {
+  left: { store: passedPostings, act: (posting) => (passedPostings[posting.id] = new Date().toISOString()) },
+  right: { store: savedPostings, act: markSaved },
+  up: { store: appliedPostings, act: markApplied },
+};
+
+function handleSwipe(posting, direction) {
+  SWIPE_ACTIONS[direction].act(posting);
+  undoStack.push({ posting, direction });
+  afterActivityChange();
+}
+
+function undoLastSwipe() {
+  const last = undoStack.pop();
+  if (!last) return;
+  delete SWIPE_ACTIONS[last.direction].store[last.posting.id];
+  showToast(`↩ Brought back ${last.posting.company_name}`, "info");
+  afterActivityChange();
+}
+
+// ---------- Game HUD ----------
+
+function renderQuests(quests) {
+  const questList = document.getElementById("quest-list");
+  questList.replaceChildren(
+    ...quests.map((quest) => {
+      const item = createElement("li", `quest${quest.done ? " done" : ""}`);
+      const label = createElement("div", "quest-label");
+      label.append(
+        createElement("span", "quest-icon", quest.done ? "✅" : quest.icon),
+        createElement("span", "quest-name", quest.name),
+        createElement("span", "quest-reward", `+${quest.xp} XP`),
+      );
+      const bar = createElement("div", "quest-bar");
+      const fill = createElement("div", "quest-fill");
+      fill.style.width = `${(quest.progress / quest.target) * 100}%`;
+      bar.append(fill);
+      item.append(label, bar, createElement("span", "quest-count", `${quest.progress} / ${quest.target}`));
+      return item;
+    }),
+  );
+}
+
+function renderTrophies(achievements) {
+  const grid = document.getElementById("trophy-grid");
+  grid.replaceChildren(
+    ...achievements.map((achievement) => {
+      const item = createElement("li", `trophy${achievement.unlocked ? " unlocked" : ""}`);
+      item.append(
+        createElement("span", "trophy-icon", achievement.unlocked ? achievement.icon : "🔒"),
+        createElement("span", "trophy-name", achievement.name),
+        createElement("span", "trophy-description", achievement.description),
+        createElement("span", "trophy-reward", `+${achievement.xp} XP`),
+      );
+      return item;
+    }),
+  );
+}
+
+function renderHud() {
+  document.getElementById("level-number").textContent = String(progress.level);
+  document.getElementById("topbar-level").textContent = String(progress.level);
+  document.getElementById("level-title").textContent = progress.title;
+  document.getElementById("streak-value").textContent = String(progress.currentStreak);
+  document.getElementById("topbar-streak").textContent = String(progress.currentStreak);
+  document.getElementById("applied-total").textContent = String(progress.applicationCount);
+  const unlockedCount = progress.achievements.filter((achievement) => achievement.unlocked).length;
+  document.getElementById("trophy-count").textContent = `${unlockedCount}/${ACHIEVEMENTS.length}`;
+
+  const xpBar = document.getElementById("xp-bar");
+  const xpFill = document.getElementById("xp-fill");
+  const xpText = document.getElementById("xp-text");
+  if (progress.xpForLevel) {
+    xpFill.style.width = `${(progress.xpIntoLevel / progress.xpForLevel) * 100}%`;
+    xpBar.setAttribute("aria-valuemax", String(progress.xpForLevel));
+    xpBar.setAttribute("aria-valuenow", String(progress.xpIntoLevel));
+    xpText.textContent = `${progress.xpIntoLevel} / ${progress.xpForLevel} XP to ${progress.nextTitle} · ${progress.xp} XP total`;
+  } else {
+    xpFill.style.width = "100%";
+    xpText.textContent = `Max level! ${progress.xp} XP total`;
+  }
+
+  renderQuests(progress.quests);
+  renderTrophies(progress.achievements);
+}
+
+// Celebrates anything new since the last update: finished quests, trophies, and level-ups.
+function celebrateChanges(previous, current, seenAchievementIds, previousLevel) {
+  let isBigMoment = false;
+  current.quests.forEach((quest, index) => {
+    if (quest.done && !previous.quests[index].done) {
+      showToast(`${quest.icon} Quest complete: ${quest.name}  +${quest.xp} XP`, "quest");
+    }
+  });
+  for (const achievement of current.achievements) {
+    if (achievement.unlocked && !seenAchievementIds.has(achievement.id)) {
+      showToast(`${achievement.icon} Trophy unlocked: ${achievement.name}  +${achievement.xp} XP`, "trophy");
+      isBigMoment = true;
+    }
+  }
+  if (current.level > previousLevel) {
+    showToast(`⬆️ Level ${current.level} reached: ${current.title}!`, "level");
+    isBigMoment = true;
+  }
+  if (isBigMoment) burstConfetti();
+}
+
+function updateGame({ celebrate }) {
+  const previous = progress;
+  progress = computeProgress(Object.values(appliedPostings), Object.values(savedPostings));
+  const stored = loadJson(STORAGE_KEYS.progress, null);
+  const seenAchievementIds = new Set(stored?.seenAchievementIds ?? []);
+  if (celebrate && previous) {
+    celebrateChanges(previous, progress, seenAchievementIds, stored?.level ?? previous.level);
+  }
+  for (const achievement of progress.achievements) {
+    if (achievement.unlocked) seenAchievementIds.add(achievement.id);
+  }
+  saveJson(STORAGE_KEYS.progress, { level: progress.level, seenAchievementIds: [...seenAchievementIds] });
+  renderHud();
+}
+
+// ---------- Discover (card deck) ----------
+
+function buildDeckCardContent(posting) {
+  const content = createElement("div", "deck-card-content");
+  const header = createElement("div", "deck-card-header");
+  const company = createElement("div", "deck-card-company");
+  company.append(createElement("p", "company", posting.company_name), createElement("p", "posted", formatPostedAge(posting)));
+  header.append(createAvatar(posting), company);
+
+  const footer = createElement("div", "deck-card-footer");
+  footer.append(createApplyLink(posting, "button button-secondary"));
+
+  content.append(header, createElement("h2", "deck-card-title", posting.title), createTags(posting), footer);
+  return content;
+}
+
+function renderDiscover() {
+  undoButton.disabled = undoStack.length === 0;
+  if (!postingsLoaded) return;
+  const deckPostings = allPostings.filter((posting) => matchesFilters(posting) && isUnseen(posting));
+  renderDeck(deck, deckPostings, buildDeckCardContent, handleSwipe);
+  for (const button of deckButtons) button.disabled = deckPostings.length === 0;
+
+  if (deckPostings.length === 0) {
+    const emptyState = createElement("div", "deck-empty");
+    emptyState.append(
+      createElement("span", "deck-empty-icon", "🎉"),
+      createElement("p", "deck-empty-title", "You've cleared this deck!"),
+      createElement("p", "deck-empty-text", "Change the filters for a new deck, or check back tomorrow for fresh postings."),
+    );
+    deck.replaceChildren(emptyState);
+    deckCount.textContent = "";
+  } else {
+    const noun = deckPostings.length === 1 ? "card" : "cards";
+    deckCount.textContent = `${deckPostings.length.toLocaleString()} ${noun} left in this deck`;
+  }
+}
+
+// ---------- Browse (list) ----------
+
+function createPostingItem(posting) {
+  const application = appliedPostings[posting.id];
+  const isSaved = posting.id in savedPostings;
+  const item = createElement("li", "posting");
+  item.classList.toggle("applied", Boolean(application));
+
+  const info = createElement("div", "posting-info");
+  info.append(
+    createElement("p", "company", posting.company_name),
+    createElement("h2", "title", posting.title),
+    createTags(posting),
+  );
+
+  const saveButton = createElement("button", "button button-secondary save-button", isSaved ? "★" : "☆");
+  saveButton.type = "button";
+  saveButton.setAttribute("aria-pressed", String(isSaved));
+  saveButton.setAttribute("aria-label", isSaved ? "Remove from saved" : "Save for later");
+  saveButton.addEventListener("click", () => toggleSaved(posting));
 
   const appliedButton = createElement(
     "button",
     "button applied-button",
-    appliedDate ? `✓ Applied ${formatDate(new Date(appliedDate))}` : "Mark applied",
+    application ? `✓ Applied ${formatDate(new Date(application.at))}` : "Mark applied",
   );
   appliedButton.type = "button";
-  appliedButton.setAttribute("aria-pressed", String(Boolean(appliedDate)));
-  appliedButton.addEventListener("click", () => toggleApplied(posting.id));
+  appliedButton.setAttribute("aria-pressed", String(Boolean(application)));
+  appliedButton.addEventListener("click", () => toggleApplied(posting));
 
   const buttons = createElement("div", "posting-buttons");
-  buttons.append(applyLink, appliedButton);
-  actions.append(buttons);
+  buttons.append(createApplyLink(posting, "button button-secondary"), saveButton, appliedButton);
+  const actions = createElement("div", "posting-actions");
+  actions.append(createElement("span", "posted", formatPostedAge(posting)), buttons);
 
-  item.append(avatar, info, actions);
+  item.append(createAvatar(posting), info, actions);
   return item;
 }
 
@@ -216,42 +482,40 @@ function createSkeletonItem() {
   return item;
 }
 
-function toggleApplied(postingId) {
-  if (postingId in appliedPostings) {
-    delete appliedPostings[postingId];
-  } else {
-    appliedPostings[postingId] = new Date().toISOString();
-  }
-  saveAppliedPostings();
-  render();
-}
+const EMPTY_LIST_TEXT = {
+  applied: "No applications yet. Swipe up in Discover or press \"Mark applied\" after you apply.",
+  saved: "Nothing saved yet. Swipe right in Discover or press ☆ to save postings for later.",
+  all: "No internships match these filters. Try clearing the search or picking \"Anywhere\".",
+};
 
-function updateFilterCount() {
-  const activeCount = [roleSelect, locationSelect, degreeSelect, termSelect].filter((select) => select.value !== "all").length;
-  activeFilterCount.textContent = String(activeCount);
-  activeFilterCount.hidden = activeCount === 0;
-}
-
-function render() {
-  const matching = allPostings.filter(matchesFilters);
-  const appliedCount = Object.keys(appliedPostings).length;
-  appliedTotal.textContent = String(appliedCount);
+function renderBrowse() {
+  if (!postingsLoaded) return;
+  const matching = allPostings.filter((posting) => matchesFilters(posting) && matchesStatus(posting));
   const noun = matching.length === 1 ? "internship" : "internships";
   summary.textContent = `${matching.length.toLocaleString()} ${noun}`;
-  updateFilterCount();
-
   postingList.replaceChildren(...matching.slice(0, visibleCount).map(createPostingItem));
   showMoreButton.hidden = matching.length <= visibleCount;
+  listMessage.hidden = matching.length > 0;
+  listMessage.textContent = EMPTY_LIST_TEXT[statusFilter];
+}
 
-  if (matching.length === 0) {
-    const emptyText =
-      statusFilter === "applied" && appliedCount === 0
-        ? "No applications yet. Press \"Mark applied\" on a posting after you apply, and it will show up here."
-        : "No internships match these filters. Try clearing the search or picking \"Anywhere\".";
-    showMessage(emptyText);
+// ---------- Page ----------
+
+function render() {
+  updateFilterCount();
+  discoverView.hidden = viewMode !== "discover";
+  browseView.hidden = viewMode !== "browse";
+  for (const tab of modeTabs) tab.setAttribute("aria-selected", String(tab.dataset.mode === viewMode));
+  if (viewMode === "discover") {
+    renderDiscover();
   } else {
-    message.hidden = true;
+    renderBrowse();
   }
+}
+
+function resetAndRender() {
+  visibleCount = PAGE_SIZE;
+  render();
 }
 
 function fillSelect(select, values) {
@@ -308,22 +572,17 @@ function fillLocationSelect() {
   locationSelect.append(createOptionGroup("Metro areas", metroOptions), createOptionGroup("States", stateOptions));
 }
 
-function resetAndRender() {
-  visibleCount = PAGE_SIZE;
-  render();
-}
-
-function selectStatusTab(selectedTab) {
-  for (const tab of statusTabs) {
-    tab.setAttribute("aria-selected", String(tab === selectedTab));
-  }
-  statusFilter = selectedTab.dataset.status;
-  resetAndRender();
+function showLoading() {
+  postingList.replaceChildren(...Array.from({ length: SKELETON_CARD_COUNT }, createSkeletonItem));
+  summary.textContent = "Loading the latest internships…";
+  const loadingCard = createElement("div", "deck-card deck-loading");
+  loadingCard.append(createElement("span", "deck-empty-icon", "🃏"), createElement("p", "deck-empty-title", "Shuffling the deck…"));
+  deck.replaceChildren(loadingCard);
+  deckCount.textContent = "";
 }
 
 async function loadPostings() {
-  postingList.replaceChildren(...Array.from({ length: SKELETON_CARD_COUNT }, createSkeletonItem));
-  summary.textContent = "Loading the latest internships…";
+  showLoading();
   try {
     const response = await fetch(LISTINGS_URL);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -340,8 +599,11 @@ async function loadPostings() {
     }
   } catch (error) {
     postingList.replaceChildren();
+    deck.replaceChildren();
     summary.textContent = "";
-    showMessage(`Couldn't load internships (${error.message}). Check your connection and refresh the page.`, true);
+    message.textContent = `Couldn't load internships (${error.message}). Check your connection and refresh the page.`;
+    message.classList.add("error");
+    message.hidden = false;
     return;
   }
 
@@ -349,8 +611,32 @@ async function loadPostings() {
   fillSelect(termSelect, [...terms].filter((term) => term !== "N/A").sort());
   fillRoleSelect();
   fillLocationSelect();
-
+  postingsLoaded = true;
   render();
+}
+
+function selectStatusTab(selectedTab) {
+  for (const tab of statusTabs) {
+    tab.setAttribute("aria-selected", String(tab === selectedTab));
+  }
+  statusFilter = selectedTab.dataset.status;
+  resetAndRender();
+}
+
+function setViewMode(mode) {
+  viewMode = mode;
+  saveJson(STORAGE_KEYS.viewMode, mode);
+  resetAndRender();
+}
+
+const ARROW_DIRECTIONS = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up" };
+
+function handleKeyDown(event) {
+  const direction = ARROW_DIRECTIONS[event.key];
+  if (!direction || viewMode !== "discover" || trophyDialog.open) return;
+  if (event.target.closest("input, select, textarea")) return;
+  event.preventDefault();
+  swipeTopCard(direction);
 }
 
 for (const control of [roleSelect, locationSelect, degreeSelect, termSelect]) {
@@ -359,6 +645,13 @@ for (const control of [roleSelect, locationSelect, degreeSelect, termSelect]) {
 for (const tab of statusTabs) {
   tab.addEventListener("click", () => selectStatusTab(tab));
 }
+for (const tab of modeTabs) {
+  tab.addEventListener("click", () => setViewMode(tab.dataset.mode));
+}
+for (const button of deckButtons) {
+  button.addEventListener("click", () => swipeTopCard(button.dataset.direction));
+}
+undoButton.addEventListener("click", undoLastSwipe);
 searchInput.addEventListener("input", resetAndRender);
 filtersToggle.addEventListener("click", () => {
   const isOpen = filterPanel.classList.toggle("open");
@@ -368,5 +661,13 @@ showMoreButton.addEventListener("click", () => {
   visibleCount += PAGE_SIZE;
   render();
 });
+document.getElementById("trophies-button").addEventListener("click", () => trophyDialog.showModal());
+document.getElementById("trophy-close").addEventListener("click", () => trophyDialog.close());
+trophyDialog.addEventListener("click", (event) => {
+  if (event.target === trophyDialog) trophyDialog.close();
+});
+document.addEventListener("keydown", handleKeyDown);
 
+updateGame({ celebrate: false });
+render();
 loadPostings();

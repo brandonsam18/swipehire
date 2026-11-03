@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Internship Tracker</title>
+    <title>Internship Quest</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap"
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -22,22 +22,60 @@
               <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
             </svg>
           </span>
-          <span class="brand-name">Internship Tracker</span>
+          <span class="brand-name">Internship Quest</span>
         </div>
-        <div class="applied-stat" aria-live="polite">
-          <span id="applied-total">0</span> applied
+        <div class="topbar-chips">
+          <span class="chip chip-streak" title="Day streak"><span aria-hidden="true">🔥</span> <span id="topbar-streak">0</span></span>
+          <span class="chip chip-level" title="Your level">LV <span id="topbar-level">1</span></span>
         </div>
       </div>
     </header>
 
     <main class="container">
       <section class="intro">
-        <h1>Find your next tech internship</h1>
+        <h1>Level up your internship hunt</h1>
         <p>
-          Live postings from the
-          <a href="https://github.com/SimplifyJobs/Summer2027-Internships" target="_blank" rel="noopener">SimplifyJobs list</a>,
-          updated daily. Mark the ones you apply to so you never lose track.
+          Swipe through live tech internships from the
+          <a href="https://github.com/SimplifyJobs/Summer2027-Internships" target="_blank" rel="noopener">SimplifyJobs list</a>.
+          Every application earns XP, keeps your streak alive, and unlocks trophies.
         </p>
+      </section>
+
+      <section class="hud" aria-label="Your progress">
+        <div class="player-card">
+          <div class="player-main">
+            <div class="level-badge" aria-hidden="true">
+              <span class="level-label">LV</span>
+              <span id="level-number" class="level-number">1</span>
+            </div>
+            <div class="player-info">
+              <p id="level-title" class="player-title">Intern Hopeful</p>
+              <div id="xp-bar" class="xp-bar" role="progressbar" aria-label="XP toward next level" aria-valuemin="0">
+                <div id="xp-fill" class="xp-fill"></div>
+              </div>
+              <p id="xp-text" class="xp-text"></p>
+            </div>
+          </div>
+          <div class="player-stats">
+            <div class="stat">
+              <span id="streak-value" class="stat-value">0</span>
+              <span class="stat-label">🔥 day streak</span>
+            </div>
+            <div class="stat">
+              <span id="applied-total" class="stat-value">0</span>
+              <span class="stat-label">applied</span>
+            </div>
+            <button id="trophies-button" class="stat stat-button" type="button">
+              <span id="trophy-count" class="stat-value">0</span>
+              <span class="stat-label">🏆 trophies</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="quests">
+          <h2 class="quests-heading">Daily quests <span class="quests-reset">reset at midnight</span></h2>
+          <ul id="quest-list" class="quest-list"></ul>
+        </div>
       </section>
 
       <section class="toolbar" aria-label="Search and filters">
@@ -87,19 +125,50 @@
         </div>
       </section>
 
-      <div class="list-header">
-        <div class="tabs" role="tablist" aria-label="Which postings to show">
-          <button class="tab" type="button" role="tab" data-status="all" aria-selected="true">All</button>
-          <button class="tab" type="button" role="tab" data-status="not-applied" aria-selected="false">To apply</button>
-          <button class="tab" type="button" role="tab" data-status="applied" aria-selected="false">Applied</button>
-        </div>
-        <p id="summary" class="summary" aria-live="polite"></p>
+      <div class="mode-switch" role="tablist" aria-label="View">
+        <button class="mode-tab" type="button" role="tab" data-mode="discover" aria-selected="true">🎴 Discover</button>
+        <button class="mode-tab" type="button" role="tab" data-mode="browse" aria-selected="false">📋 Browse</button>
       </div>
 
       <div id="message" class="message" hidden></div>
-      <ul id="posting-list" class="posting-list"></ul>
-      <button id="show-more-button" class="button button-secondary show-more" type="button" hidden>Show more</button>
+
+      <section id="discover-view" class="discover-view" aria-label="Discover">
+        <p class="deck-hint">
+          Drag a card, tap a button, or use your arrow keys:
+          <kbd>←</kbd> pass · <kbd>↑</kbd> applied · <kbd>→</kbd> save
+        </p>
+        <div id="deck" class="deck"></div>
+        <div class="deck-controls">
+          <button class="deck-button deck-pass" type="button" data-direction="left" aria-label="Pass">✕</button>
+          <button id="undo-button" class="deck-button deck-undo" type="button" aria-label="Undo last swipe" disabled>↩</button>
+          <button class="deck-button deck-apply" type="button" data-direction="up" aria-label="Mark applied">✓</button>
+          <button class="deck-button deck-save" type="button" data-direction="right" aria-label="Save for later">★</button>
+        </div>
+        <p id="deck-count" class="deck-count" aria-live="polite"></p>
+      </section>
+
+      <section id="browse-view" class="browse-view" aria-label="Browse" hidden>
+        <div class="list-header">
+          <div class="tabs" role="tablist" aria-label="Which postings to show">
+            <button class="tab" type="button" role="tab" data-status="all" aria-selected="true">All</button>
+            <button class="tab" type="button" role="tab" data-status="saved" aria-selected="false">Saved</button>
+            <button class="tab" type="button" role="tab" data-status="applied" aria-selected="false">Applied</button>
+          </div>
+          <p id="summary" class="summary" aria-live="polite"></p>
+        </div>
+        <div id="list-message" class="message" hidden></div>
+        <ul id="posting-list" class="posting-list"></ul>
+        <button id="show-more-button" class="button button-secondary show-more" type="button" hidden>Show more</button>
+      </section>
     </main>
+
+    <dialog id="trophy-dialog" class="trophy-dialog" aria-labelledby="trophy-heading">
+      <div class="dialog-header">
+        <h2 id="trophy-heading">Trophy case</h2>
+        <button id="trophy-close" class="icon-button" type="button" aria-label="Close trophy case">✕</button>
+      </div>
+      <ul id="trophy-grid" class="trophy-grid"></ul>
+    </dialog>
 
     <script type="module" src="app.js"></script>
   </body>
