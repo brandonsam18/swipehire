@@ -127,7 +127,6 @@ function selectAuthMode(mode) {
   for (const tab of authTabs) tab.setAttribute("aria-selected", String(tab.dataset.authMode === mode));
   submitButton.textContent = mode === "log-in" ? "Log in" : "Create account";
   passwordInput.autocomplete = mode === "log-in" ? "current-password" : "new-password";
-  passwordInput.placeholder = mode === "log-in" ? "Enter your password" : `At least ${MIN_PASSWORD_LENGTH} characters`;
   forgotPasswordButton.hidden = mode !== "log-in";
   showAuthMessage("");
 }
