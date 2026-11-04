@@ -27,7 +27,66 @@
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body class="splash-open">
+    <div id="splash" class="splash" role="dialog" aria-modal="true" aria-labelledby="splash-title">
+      <div class="splash-inner">
+        <button id="splash-close" class="icon-button splash-close" type="button" aria-label="Back to the game" hidden>✕</button>
+        <div class="splash-logo" aria-hidden="true">
+          <span class="splash-card splash-card-back"></span>
+          <span class="splash-card splash-card-middle"></span>
+          <span class="splash-card splash-card-front">💼</span>
+        </div>
+        <h1 id="splash-title" class="splash-title">Internship Quest</h1>
+
+        <section id="splash-loading" class="splash-loading">
+          <div class="splash-progress"><div class="splash-progress-fill"></div></div>
+          <p id="splash-status" class="splash-status" aria-live="polite">Shuffling the deck…</p>
+          <p id="splash-tip" class="splash-tip"></p>
+        </section>
+
+        <section id="splash-error" class="splash-error" hidden>
+          <p id="splash-error-text" role="alert"></p>
+          <button id="splash-retry" class="button applied-button" type="button">Try again</button>
+        </section>
+
+        <section id="welcome" class="welcome" hidden>
+          <p class="welcome-tagline">Swipe, apply, level up. Log in to keep your progress on every device.</p>
+          <div id="account-options">
+            <div class="auth-tabs" role="tablist" aria-label="Log in or create an account">
+              <button class="auth-tab" type="button" role="tab" data-auth-mode="log-in" aria-selected="true">Log in</button>
+              <button class="auth-tab" type="button" role="tab" data-auth-mode="sign-up" aria-selected="false">Create account</button>
+            </div>
+            <form id="auth-form" class="auth-form" novalidate>
+              <label class="auth-field">
+                <span>Email</span>
+                <input id="auth-email" type="email" autocomplete="email" placeholder="you@illinois.edu" required />
+              </label>
+              <label class="auth-field">
+                <span>Password</span>
+                <input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 6 characters" required />
+              </label>
+              <p id="auth-message" class="auth-message" role="alert" hidden></p>
+              <button id="auth-submit" class="button applied-button auth-submit" type="submit">Log in</button>
+              <button id="forgot-password" class="link-button" type="button">Forgot password?</button>
+            </form>
+            <div class="auth-divider"><span>or</span></div>
+            <button id="google-sign-in" class="button button-secondary auth-google" type="button">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path fill="#4285F4" d="M22.6 12.3c0-.8-.1-1.5-.2-2.3H12v4.3h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8z" />
+              <path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23z" />
+              <path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.3V7.1H2.1a11 11 0 0 0 0 9.9l3.7-2.8z" />
+              <path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4z" />
+            </svg>
+              Continue with Google
+            </button>
+          </div>
+          <p id="accounts-unavailable" class="guest-note" hidden>Accounts are coming soon. For now, progress is saved in this browser.</p>
+          <button id="guest-button" class="link-button guest-button" type="button">Continue as guest →</button>
+          <p class="guest-note">Guest progress is saved only in this browser.</p>
+        </section>
+      </div>
+    </div>
+
     <header class="topbar">
       <div class="topbar-inner">
         <div class="brand">
@@ -41,6 +100,7 @@
         </div>
         <div class="topbar-chips">
           <button id="theme-toggle" class="theme-toggle" type="button"></button>
+          <button id="account-button" class="account-button" type="button">Log in</button>
           <span class="chip chip-streak" title="Day streak"><span aria-hidden="true">🔥</span> <span id="topbar-streak">0</span></span>
           <span class="chip chip-level" title="Your level">LV <span id="topbar-level">1</span></span>
         </div>
@@ -146,8 +206,6 @@
         <button class="mode-tab" type="button" role="tab" data-mode="browse" aria-selected="false">📋 Browse</button>
       </div>
 
-      <div id="message" class="message" hidden></div>
-
       <section id="discover-view" class="discover-view" aria-label="Discover">
         <p class="deck-hint">
           Drag a card, tap a button, or use your arrow keys:
@@ -184,6 +242,17 @@
         <button id="trophy-close" class="icon-button" type="button" aria-label="Close trophy case">✕</button>
       </div>
       <ul id="trophy-grid" class="trophy-grid"></ul>
+    </dialog>
+
+    <dialog id="account-dialog" class="trophy-dialog account-dialog" aria-labelledby="account-heading">
+      <div class="dialog-header">
+        <h2 id="account-heading">Your account</h2>
+        <button id="account-close" class="icon-button" type="button" aria-label="Close account panel">✕</button>
+      </div>
+      <p class="account-label">Logged in as</p>
+      <p id="account-email" class="account-email"></p>
+      <p id="sync-status" class="sync-status" aria-live="polite"></p>
+      <button id="log-out-button" class="button button-secondary" type="button">Log out</button>
     </dialog>
 
     <script type="module" src="app.js"></script>

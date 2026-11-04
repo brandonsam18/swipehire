@@ -1,3 +1,13 @@
+import { accountsAvailable, logOut, watchUser } from "./account.js";
+import {
+  activity,
+  flushCloudSave,
+  guestActivitySummary,
+  saveActivity,
+  setSyncStatusListener,
+  useAccount,
+  useGuest,
+} from "./activity.js";
 import { burstConfetti, showToast } from "./celebrate.js";
 import { renderDeck, swipeTopCard } from "./deck.js";
 import { ACHIEVEMENTS, FRESH_POSTING_DAYS, XP_PER_SAVE, applicationXp, computeProgress } from "./game.js";
@@ -5,15 +15,21 @@ import { METRO_AREAS, STATE_NAMES, isRemoteUs, metroIdOf, stateCodeOf } from "./
 import { guessCompanyDomain, logoUrl } from "./logos.js";
 import { ROLES, roleIdsOf } from "./roles.js";
 import { setUpThemeToggle } from "./theme.js";
+import {
+  hideSplash,
+  isSplashOpen,
+  setLoadingStatus,
+  setUpWelcomeScreen,
+  showLoadingError,
+  showLoadingScreen,
+  showWelcomeScreen,
+} from "./welcome.js";
 
 const LISTINGS_URL =
   "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json";
 const STORAGE_KEYS = {
-  applied: "appliedPostings",
-  saved: "savedPostings",
-  passed: "passedPostings",
-  progress: "gameProgress",
   viewMode: "viewMode",
+  playingAsGuest: "playingAsGuest",
 };
 const PAGE_SIZE = 50;
 const SKELETON_CARD_COUNT = 6;
@@ -38,11 +54,13 @@ const deckButtons = document.querySelectorAll(".deck-button[data-direction]");
 const undoButton = document.getElementById("undo-button");
 const statusTabs = document.querySelectorAll(".tab");
 const summary = document.getElementById("summary");
-const message = document.getElementById("message");
 const listMessage = document.getElementById("list-message");
 const postingList = document.getElementById("posting-list");
 const showMoreButton = document.getElementById("show-more-button");
 const trophyDialog = document.getElementById("trophy-dialog");
+const accountButton = document.getElementById("account-button");
+const accountDialog = document.getElementById("account-dialog");
+const syncStatus = document.getElementById("sync-status");
 
 function loadJson(key, fallback) {
   try {
@@ -56,25 +74,19 @@ function saveJson(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    showToast("Couldn't save your progress in this browser (private mode?)", "error");
+    // Only conveniences (view mode, guest choice) are stored this way; they just won't be remembered.
   }
-}
-
-// Older versions stored only the date an application was marked.
-function loadApplications() {
-  const stored = loadJson(STORAGE_KEYS.applied, {});
-  return Object.fromEntries(
-    Object.entries(stored).map(([id, value]) => [id, typeof value === "string" ? { at: value } : value]),
-  );
 }
 
 let allPostings = [];
 let postingsLoaded = false;
-// Each maps posting id -> what happened: applications store { at, fresh, roleIds, metroIds };
-// saved and passed store the ISO date.
-const appliedPostings = loadApplications();
-const savedPostings = loadJson(STORAGE_KEYS.saved, {});
-const passedPostings = loadJson(STORAGE_KEYS.passed, {});
+// Each maps posting id -> what happened (see activity.js).
+const appliedPostings = activity.applied;
+const savedPostings = activity.saved;
+const passedPostings = activity.passed;
+let currentUser = null;
+let userKnown = false;
+let startupDone = false;
 let viewMode = loadJson(STORAGE_KEYS.viewMode, "discover") === "browse" ? "browse" : "discover";
 let statusFilter = "all";
 let visibleCount = PAGE_SIZE;
@@ -238,12 +250,6 @@ function createApplyLink(posting, className) {
 
 // ---------- Actions ----------
 
-function persistActivity() {
-  saveJson(STORAGE_KEYS.applied, appliedPostings);
-  saveJson(STORAGE_KEYS.saved, savedPostings);
-  saveJson(STORAGE_KEYS.passed, passedPostings);
-}
-
 function markApplied(posting) {
   const application = {
     at: new Date().toISOString(),
@@ -261,9 +267,9 @@ function markSaved(posting) {
 }
 
 function afterActivityChange() {
-  persistActivity();
   render();
   updateGame({ celebrate: true });
+  saveActivity();
 }
 
 function toggleApplied(posting) {
@@ -394,15 +400,14 @@ function celebrateChanges(previous, current, seenAchievementIds, previousLevel) 
 function updateGame({ celebrate }) {
   const previous = progress;
   progress = computeProgress(Object.values(appliedPostings), Object.values(savedPostings));
-  const stored = loadJson(STORAGE_KEYS.progress, null);
-  const seenAchievementIds = new Set(stored?.seenAchievementIds ?? []);
+  const seenAchievementIds = new Set(activity.seen.seenAchievementIds);
   if (celebrate && previous) {
-    celebrateChanges(previous, progress, seenAchievementIds, stored?.level ?? previous.level);
+    celebrateChanges(previous, progress, seenAchievementIds, activity.seen.level);
   }
   for (const achievement of progress.achievements) {
     if (achievement.unlocked) seenAchievementIds.add(achievement.id);
   }
-  saveJson(STORAGE_KEYS.progress, { level: progress.level, seenAchievementIds: [...seenAchievementIds] });
+  activity.seen = { level: progress.level, seenAchievementIds: [...seenAchievementIds] };
   renderHud();
 }
 
@@ -608,12 +613,10 @@ async function loadPostings() {
       posting.degrees ??= [];
     }
   } catch (error) {
-    postingList.replaceChildren();
-    deck.replaceChildren();
-    summary.textContent = "";
-    message.textContent = `Couldn't load internships (${error.message}). Check your connection and refresh the page.`;
-    message.classList.add("error");
-    message.hidden = false;
+    showLoadingError(`Couldn't load internships (${error.message}). Check your connection and try again.`, () => {
+      showLoadingScreen();
+      loadPostings();
+    });
     return;
   }
 
@@ -622,7 +625,106 @@ async function loadPostings() {
   fillRoleSelect();
   fillLocationSelect();
   postingsLoaded = true;
+  setLoadingStatus(`Dealt ${allPostings.length.toLocaleString()} internships!`);
+  finishStartup();
+}
+
+// ---------- Accounts ----------
+
+// Opens the game once both the internships and the player's account have loaded.
+function finishStartup() {
+  if (startupDone || !postingsLoaded || !userKnown) return;
+  startupDone = true;
   render();
+  if (currentUser || loadJson(STORAGE_KEYS.playingAsGuest, false)) {
+    hideSplash();
+  } else {
+    showWelcomeScreen({ closable: false });
+  }
+}
+
+function renderAccountButton() {
+  accountButton.hidden = !accountsAvailable;
+  if (currentUser) {
+    const name = currentUser.displayName || currentUser.email || "?";
+    accountButton.textContent = name.trim().charAt(0).toUpperCase();
+    accountButton.classList.add("signed-in");
+    accountButton.setAttribute("aria-label", "Your account");
+    document.getElementById("account-email").textContent = currentUser.email ?? name;
+  } else {
+    accountButton.textContent = "Log in";
+    accountButton.classList.remove("signed-in");
+    accountButton.removeAttribute("aria-label");
+  }
+}
+
+// Offers to move this browser's guest progress into the account that just logged in.
+function shouldMoveGuestProgress() {
+  const guest = guestActivitySummary();
+  if (guest.isEmpty) return false;
+  return window.confirm(
+    `This browser has guest progress (${guest.applied} applied, ${guest.saved} saved). Add it to your account?`,
+  );
+}
+
+async function handleUserChanged(user) {
+  if (userKnown && (user?.uid ?? null) === (currentUser?.uid ?? null)) return;
+  if (user) {
+    try {
+      await useAccount(user.uid, { includeGuestProgress: shouldMoveGuestProgress() });
+    } catch {
+      showToast("Couldn't load your saved progress. Check your connection and log in again.", "error");
+      await logOut();
+      return;
+    }
+    currentUser = user;
+    syncStatus.textContent = "✓ Your progress saves to your account automatically.";
+  } else {
+    useGuest();
+    currentUser = null;
+  }
+
+  undoStack.length = 0;
+  progress = null;
+  updateGame({ celebrate: false });
+  renderAccountButton();
+  if (startupDone) {
+    resetAndRender();
+    if (user && isSplashOpen()) {
+      hideSplash();
+      showToast(`👋 Welcome, ${user.displayName || user.email}!`, "info");
+    }
+  }
+  userKnown = true;
+  finishStartup();
+}
+
+const SYNC_STATUS_TEXT = {
+  saving: "Saving…",
+  saved: "✓ Progress saved to your account.",
+  error: "⚠️ Couldn't save just now. Your next move will try again.",
+};
+
+function handleSyncStatus(status) {
+  if (status === "local-error") {
+    showToast("Couldn't save your progress in this browser (private mode?)", "error");
+    return;
+  }
+  syncStatus.textContent = SYNC_STATUS_TEXT[status];
+  if (status === "error") showToast("Couldn't save to your account. Check your connection.", "error");
+}
+
+async function handleLogOut() {
+  await flushCloudSave();
+  await logOut();
+  accountDialog.close();
+  saveJson(STORAGE_KEYS.playingAsGuest, false);
+  showWelcomeScreen({ closable: true });
+}
+
+function playAsGuest() {
+  saveJson(STORAGE_KEYS.playingAsGuest, true);
+  hideSplash();
 }
 
 function selectStatusTab(selectedTab) {
@@ -643,7 +745,7 @@ const ARROW_DIRECTIONS = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up"
 
 function handleKeyDown(event) {
   const direction = ARROW_DIRECTIONS[event.key];
-  if (!direction || viewMode !== "discover" || trophyDialog.open) return;
+  if (!direction || viewMode !== "discover" || trophyDialog.open || accountDialog.open || isSplashOpen()) return;
   if (event.target.closest("input, select, textarea")) return;
   event.preventDefault();
   swipeTopCard(direction);
@@ -677,8 +779,27 @@ trophyDialog.addEventListener("click", (event) => {
   if (event.target === trophyDialog) trophyDialog.close();
 });
 document.addEventListener("keydown", handleKeyDown);
+accountButton.addEventListener("click", () => {
+  if (currentUser) {
+    accountDialog.showModal();
+  } else {
+    showWelcomeScreen({ closable: true });
+  }
+});
+document.getElementById("account-close").addEventListener("click", () => accountDialog.close());
+accountDialog.addEventListener("click", (event) => {
+  if (event.target === accountDialog) accountDialog.close();
+});
+document.getElementById("log-out-button").addEventListener("click", handleLogOut);
+// Sends any waiting save before the tab is hidden or closed.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") flushCloudSave();
+});
 
+showLoadingScreen();
 setUpThemeToggle(document.getElementById("theme-toggle"));
-updateGame({ celebrate: false });
-render();
+setUpWelcomeScreen({ onGuest: playAsGuest });
+setSyncStatusListener(handleSyncStatus);
+renderAccountButton();
+watchUser(handleUserChanged);
 loadPostings();
