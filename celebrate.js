@@ -10,7 +10,10 @@ const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 let toastStack;
 
-/** Shows a short message at the bottom of the screen. Variants: "xp", "quest", "trophy", "level". */
+/**
+ * Shows a short message at the top of the screen, clear of the deck buttons.
+ * Hovering over it (or tapping it) dismisses it early. Variants: "xp", "quest", "trophy", "level".
+ */
 export function showToast(text, variant = "xp") {
   if (!toastStack) {
     toastStack = document.createElement("div");
@@ -24,10 +27,15 @@ export function showToast(text, variant = "xp") {
   toast.textContent = text;
   toastStack.append(toast);
   while (toastStack.children.length > MAX_TOASTS) toastStack.firstElementChild.remove();
-  setTimeout(() => {
+
+  const dismiss = () => {
+    if (toast.classList.contains("leaving")) return;
     toast.classList.add("leaving");
     toast.addEventListener("animationend", () => toast.remove(), { once: true });
-  }, TOAST_DURATION_MS);
+  };
+  toast.addEventListener("pointerenter", dismiss);
+  toast.addEventListener("click", dismiss);
+  setTimeout(dismiss, TOAST_DURATION_MS);
 }
 
 /** Bursts confetti from the middle of the screen. Skipped when the device asks for less motion. */

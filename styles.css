@@ -1076,7 +1076,7 @@ kbd {
 .toast-stack {
   position: fixed;
   left: 50%;
-  bottom: 24px;
+  top: 72px;
   z-index: 50;
   display: flex;
   flex-direction: column;
@@ -1095,6 +1095,8 @@ kbd {
   border: 1px solid var(--border-strong);
   box-shadow: var(--shadow-md);
   font-weight: 600;
+  cursor: pointer;
+  pointer-events: auto;
   animation: toast-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1127,14 +1129,14 @@ kbd {
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(16px) scale(0.9);
+    transform: translateY(-16px) scale(0.9);
   }
 }
 
 @keyframes toast-out {
   to {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(-8px);
   }
 }
 

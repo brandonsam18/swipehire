@@ -222,7 +222,16 @@ function createApplyLink(posting, className) {
   applyLink.href = posting.url;
   applyLink.target = "_blank";
   applyLink.rel = "noopener";
-  applyLink.setAttribute("aria-label", `Apply to ${posting.title} at ${posting.company_name} (opens in a new tab)`);
+  applyLink.setAttribute(
+    "aria-label",
+    `Apply to ${posting.title} at ${posting.company_name} (opens in a new tab and tracks it as applied)`,
+  );
+  // Opening the application tracks it automatically, so nobody has to come back and press "Mark applied".
+  applyLink.addEventListener("click", () => {
+    if (posting.id in appliedPostings) return;
+    markApplied(posting);
+    afterActivityChange();
+  });
   return applyLink;
 }
 
