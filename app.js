@@ -4,6 +4,7 @@ import { ACHIEVEMENTS, FRESH_POSTING_DAYS, XP_PER_SAVE, applicationXp, computePr
 import { METRO_AREAS, STATE_NAMES, isRemoteUs, metroIdOf, stateCodeOf } from "./locations.js";
 import { guessCompanyDomain, logoUrl } from "./logos.js";
 import { ROLES, roleIdsOf } from "./roles.js";
+import { setUpThemeToggle } from "./theme.js";
 
 const LISTINGS_URL =
   "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json";
@@ -677,6 +678,7 @@ trophyDialog.addEventListener("click", (event) => {
 });
 document.addEventListener("keydown", handleKeyDown);
 
+setUpThemeToggle(document.getElementById("theme-toggle"));
 updateGame({ celebrate: false });
 render();
 loadPostings();

@@ -4,6 +4,21 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Internship Quest</title>
+    <script>
+      // Sets the theme before the page draws, so it never flashes the wrong colors.
+      (() => {
+        let theme = null;
+        try {
+          theme = localStorage.getItem("theme");
+        } catch {
+          // Storage can be blocked (e.g. private mode); fall back to the device setting.
+        }
+        if (theme !== "light" && theme !== "dark") {
+          theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -25,6 +40,7 @@
           <span class="brand-name">Internship Quest</span>
         </div>
         <div class="topbar-chips">
+          <button id="theme-toggle" class="theme-toggle" type="button"></button>
           <span class="chip chip-streak" title="Day streak"><span aria-hidden="true">🔥</span> <span id="topbar-streak">0</span></span>
           <span class="chip chip-level" title="Your level">LV <span id="topbar-level">1</span></span>
         </div>

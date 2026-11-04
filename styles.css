@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   --bg: #f7f8fa;
   --surface: #ffffff;
   --surface-muted: #f1f3f6;
@@ -26,32 +27,32 @@
   --glow: 0 0 0 1px rgba(139, 92, 246, 0.25), 0 10px 30px rgba(139, 92, 246, 0.18);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0e14;
-    --surface: #131823;
-    --surface-muted: #1b2230;
-    --text: #e8ecf3;
-    --muted: #94a0b4;
-    --border: #232b3a;
-    --border-strong: #334055;
-    --accent: #8b8cf8;
-    --accent-hover: #a5a6fb;
-    --accent-soft: #1e1f3d;
-    --on-accent: #0b0e14;
-    --success: #6ee7a0;
-    --success-soft: #0f2a1c;
-    --success-border: #1f5136;
-    --error: #ff8a80;
-    --warning: #fbbf24;
-    --warning-border: #6b4f12;
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.45);
-    --gold: #fbbf24;
-    --gold-soft: #3a2a07;
-    --danger: #fb7185;
-    --glow: 0 0 0 1px rgba(139, 92, 246, 0.35), 0 12px 40px rgba(139, 92, 246, 0.25);
-  }
+/* Dark theme: chosen with the sun/moon button, or from the device setting until then. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b0e14;
+  --surface: #131823;
+  --surface-muted: #1b2230;
+  --text: #e8ecf3;
+  --muted: #94a0b4;
+  --border: #232b3a;
+  --border-strong: #334055;
+  --accent: #8b8cf8;
+  --accent-hover: #a5a6fb;
+  --accent-soft: #1e1f3d;
+  --on-accent: #0b0e14;
+  --success: #6ee7a0;
+  --success-soft: #0f2a1c;
+  --success-border: #1f5136;
+  --error: #ff8a80;
+  --warning: #fbbf24;
+  --warning-border: #6b4f12;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --gold: #fbbf24;
+  --gold-soft: #3a2a07;
+  --danger: #fb7185;
+  --glow: 0 0 0 1px rgba(139, 92, 246, 0.35), 0 12px 40px rgba(139, 92, 246, 0.25);
 }
 
 [hidden] {
@@ -150,6 +151,7 @@ select {
 
 .topbar-chips {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
@@ -163,6 +165,24 @@ select {
 .chip-streak {
   background: var(--gold-soft);
   color: var(--gold);
+}
+
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.15s ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  transform: rotate(20deg);
 }
 
 .chip-level {
