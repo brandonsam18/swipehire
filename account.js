@@ -97,5 +97,8 @@ const ERROR_MESSAGES = {
 
 /** A message a player can act on, for a Firebase error. */
 export function friendlyError(error) {
-  return ERROR_MESSAGES[error?.code] ?? "Something went wrong. Check your connection and try again.";
+  if (ERROR_MESSAGES[error?.code]) return ERROR_MESSAGES[error.code];
+  // Include Firebase's error code so an unexpected problem can be looked up.
+  const code = error?.code ? ` (${error.code})` : "";
+  return `Something went wrong${code}. Check your connection and try again.`;
 }
