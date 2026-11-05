@@ -1,58 +1,72 @@
+/* Two-color palette: Dreamy (#eaebed) and Ocean (#006989), with lighter and
+   darker shades of each, used for both flat colors and the gradients and glows. */
 :root {
   color-scheme: light;
-  --bg: #f7f8fa;
-  --surface: #ffffff;
-  --surface-muted: #f1f3f6;
-  --text: #0f172a;
-  --muted: #64748b;
-  --border: #e4e7ec;
-  --border-strong: #cfd5de;
-  --accent: #4f46e5;
-  --accent-hover: #4338ca;
-  --accent-soft: #eef2ff;
-  --on-accent: #ffffff;
-  --success: #15803d;
-  --success-soft: #ecfdf3;
-  --success-border: #b7e4c7;
-  --error: #b42318;
-  --warning: #b45309;
-  --warning-border: #f3c98b;
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
-  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --dreamy: #eaebed;
+  --ocean: #006989;
+  --bg: var(--dreamy);
+  --surface: #f6f7f8;
+  --surface-muted: #dfe2e5;
+  --text: #00303f;
+  --muted: #4a6670;
+  --border: #d2d7dc;
+  --border-strong: #b3c2c9;
+  --accent: var(--ocean);
+  --accent-hover: #00546e;
+  --accent-soft: #d3e3e9;
+  --on-accent: var(--dreamy);
+  --success: var(--ocean);
+  --success-soft: #d3e3e9;
+  --success-border: #9cc2cf;
+  --error: #00303f;
+  --warning: #4a6670;
+  --warning-border: #9fb4bc;
+  --shadow-sm: 0 1px 2px rgba(0, 48, 63, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 48, 63, 0.1);
   --radius: 14px;
-  --game-gradient: linear-gradient(135deg, #8b5cf6, #22d3ee);
-  --gold: #d97706;
-  --gold-soft: #fef3c7;
-  --danger: #e11d48;
-  --glow: 0 0 0 1px rgba(139, 92, 246, 0.25), 0 10px 30px rgba(139, 92, 246, 0.18);
+  /* Filled shapes (buttons, level badge, XP bar) always carry Dreamy text, so this
+     gradient stays dark enough in both themes. */
+  --game-gradient: linear-gradient(135deg, #005570, #1a809f);
+  /* Gradient headings: dark on the light page, light on the dark page. */
+  --text-gradient: linear-gradient(135deg, #00546e, #2a8fae);
+  --gold: var(--ocean);
+  --gold-soft: #d3e3e9;
+  --danger: #00303f;
+  --glow: 0 0 0 1px rgba(0, 105, 137, 0.25), 0 10px 30px rgba(0, 105, 137, 0.18);
+  --halo-ocean: rgba(0, 105, 137, 0.16);
+  --halo-light: rgba(127, 185, 203, 0.22);
 }
 
-/* Dark theme: chosen with the sun/moon button, or from the device setting until then. */
+/* Dark theme: chosen with the sun/moon button, or from the device setting until then.
+   Deep shades of Ocean, with Dreamy text and light Ocean accents. */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0b0e14;
-  --surface: #131823;
-  --surface-muted: #1b2230;
-  --text: #e8ecf3;
-  --muted: #94a0b4;
-  --border: #232b3a;
-  --border-strong: #334055;
-  --accent: #8b8cf8;
-  --accent-hover: #a5a6fb;
-  --accent-soft: #1e1f3d;
-  --on-accent: #0b0e14;
-  --success: #6ee7a0;
-  --success-soft: #0f2a1c;
-  --success-border: #1f5136;
-  --error: #ff8a80;
-  --warning: #fbbf24;
-  --warning-border: #6b4f12;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.45);
-  --gold: #fbbf24;
-  --gold-soft: #3a2a07;
-  --danger: #fb7185;
-  --glow: 0 0 0 1px rgba(139, 92, 246, 0.35), 0 12px 40px rgba(139, 92, 246, 0.25);
+  --bg: #00202a;
+  --surface: #032c39;
+  --surface-muted: #083a4a;
+  --text: var(--dreamy);
+  --muted: #9fb7bf;
+  --border: #0d4456;
+  --border-strong: #1b5a6e;
+  --accent: #7fb9cb;
+  --accent-hover: #a3cddb;
+  --accent-soft: #0b4253;
+  --on-accent: #00202a;
+  --success: #7fb9cb;
+  --success-soft: #0b4253;
+  --success-border: #1b5a6e;
+  --error: var(--dreamy);
+  --warning: #9fb7bf;
+  --warning-border: #2a6476;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+  --text-gradient: linear-gradient(135deg, #7fb9cb, var(--dreamy));
+  --gold: #7fb9cb;
+  --gold-soft: #0b4253;
+  --danger: var(--dreamy);
+  --glow: 0 0 0 1px rgba(127, 185, 203, 0.3), 0 12px 40px rgba(0, 105, 137, 0.45);
+  --halo-ocean: rgba(0, 105, 137, 0.4);
+  --halo-light: rgba(127, 185, 203, 0.12);
 }
 
 [hidden] {
@@ -66,8 +80,8 @@
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 15% -10%, rgba(139, 92, 246, 0.18), transparent 40%),
-    radial-gradient(circle at 90% 0%, rgba(34, 211, 238, 0.12), transparent 35%),
+    radial-gradient(circle at 15% -10%, var(--halo-ocean), transparent 40%),
+    radial-gradient(circle at 90% 0%, var(--halo-light), transparent 35%),
     var(--bg);
   background-attachment: fixed;
   color: var(--text);
@@ -183,7 +197,7 @@ select {
 
 .chip-level {
   background: var(--game-gradient);
-  color: #fff;
+  color: var(--dreamy);
 }
 
 /* Layout */
@@ -208,7 +222,7 @@ h2,
 
 .intro h1 {
   margin: 0 0 6px;
-  background: var(--game-gradient);
+  background: var(--text-gradient);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -433,7 +447,7 @@ h2,
   border-radius: 11px;
   position: relative;
   overflow: hidden;
-  color: #fff;
+  color: var(--dreamy);
   font-weight: 700;
   font-size: 1.1rem;
 }
@@ -672,9 +686,9 @@ h2,
   height: 64px;
   border-radius: 18px;
   background: var(--game-gradient);
-  color: #fff;
+  color: var(--dreamy);
   line-height: 1;
-  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 105, 137, 0.4);
 }
 
 .level-label {
@@ -713,7 +727,7 @@ h2,
   height: 100%;
   border-radius: inherit;
   background: var(--game-gradient);
-  box-shadow: 0 0 12px rgba(34, 211, 238, 0.6);
+  box-shadow: 0 0 12px rgba(127, 185, 203, 0.6);
   transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -867,8 +881,8 @@ h2,
 
 .mode-tab[aria-selected="true"] {
   background: var(--game-gradient);
-  color: #fff;
-  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+  color: var(--dreamy);
+  box-shadow: 0 4px 14px rgba(0, 105, 137, 0.35);
 }
 
 /* Card deck */
@@ -1155,7 +1169,7 @@ kbd {
 }
 
 .toast-xp {
-  border-color: rgba(139, 92, 246, 0.6);
+  border-color: rgba(0, 105, 137, 0.6);
 }
 
 .toast-quest {
@@ -1167,7 +1181,7 @@ kbd {
 .toast-level {
   border: 0;
   background: var(--game-gradient);
-  color: #fff;
+  color: var(--dreamy);
   font-size: 1.05rem;
 }
 
@@ -1211,7 +1225,7 @@ kbd {
 }
 
 .trophy-dialog::backdrop {
-  background: rgba(5, 7, 12, 0.6);
+  background: rgba(0, 32, 42, 0.6);
   backdrop-filter: blur(4px);
 }
 
@@ -1296,8 +1310,8 @@ body.splash-open {
   overflow-y: auto;
   padding: 24px 16px;
   background:
-    radial-gradient(circle at 20% 10%, rgba(139, 92, 246, 0.28), transparent 45%),
-    radial-gradient(circle at 85% 90%, rgba(34, 211, 238, 0.2), transparent 45%),
+    radial-gradient(circle at 20% 10%, var(--halo-ocean), transparent 45%),
+    radial-gradient(circle at 85% 90%, var(--halo-light), transparent 45%),
     var(--bg);
   animation: splash-in 0.3s ease;
 }
@@ -1348,7 +1362,7 @@ body.splash-open {
   place-items: center;
   border-radius: 16px;
   background: var(--game-gradient);
-  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 105, 137, 0.4);
   font-size: 2.6rem;
   animation: card-fan 1.8s ease-in-out infinite;
 }
@@ -1365,8 +1379,8 @@ body.splash-open {
 
 .splash-card-front {
   --fan: 0deg;
-  /* The logo's own purple, so the cyan crossbar stands out. */
-  background: #7c3aed;
+  /* Solid Ocean like the logo, in both themes. */
+  background: var(--ocean);
   animation-name: card-bounce;
 }
 
@@ -1385,7 +1399,7 @@ body.splash-open {
 .splash-title {
   margin: 0 0 20px;
   font-size: 2rem;
-  background: var(--game-gradient);
+  background: var(--text-gradient);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1609,7 +1623,7 @@ body.splash-open {
   padding: 0;
   border: 0;
   background: var(--game-gradient);
-  color: #fff;
+  color: var(--dreamy);
 }
 
 .account-dialog {

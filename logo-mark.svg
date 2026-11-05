@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="4 10 56 44">
   <!-- The SwipeHire letters without the background square, for placing on colored surfaces. -->
   <g transform="skewX(-10) translate(5 0)" fill="none" stroke-linecap="round" stroke-width="6.5">
-    <path d="M29 18C25 13 12 13 12 21C12 28 22 29 26 32C31 35 32 46 22 48C16 49 12 47 10 44" stroke="#ffffff"/>
-    <path d="M38 15V49M52 15V49" stroke="#ffffff"/>
-    <path d="M26 32H52" stroke="#22d3ee"/>
+    <path d="M29 18C25 13 12 13 12 21C12 28 22 29 26 32C31 35 32 46 22 48C16 49 12 47 10 44" stroke="#eaebed"/>
+    <path d="M38 15V49M52 15V49" stroke="#eaebed"/>
+    <path d="M26 32H52" stroke="#7fb9cb"/>
   </g>
 </svg>
