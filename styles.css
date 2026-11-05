@@ -228,6 +228,11 @@ h2,
   color: var(--muted);
 }
 
+.intro .intro-sources {
+  margin-top: 6px;
+  font-size: 0.8rem;
+}
+
 /* Search and filters */
 
 .toolbar {
@@ -302,7 +307,8 @@ h2,
 
 .filter-panel {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* Four or five filters: the Role filter only shows for fields that have roles. */
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
 }
 
@@ -525,6 +531,13 @@ h2,
 
 .closed-label:hover {
   background: var(--surface);
+}
+
+.tag-field {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--text);
+  font-weight: 600;
 }
 
 .tag-new {

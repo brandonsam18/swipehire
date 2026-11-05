@@ -6,7 +6,7 @@ const TIPS = [
   "Tip: swipe right to save a posting for later.",
   "Tip: postings under 3 days old are worth +25 bonus XP.",
   "Tip: apply 3 days in a row to unlock 🔥 On Fire.",
-  "Tip: use the Role filter to get a deck of just Backend roles.",
+  "Tip: use the Field filter to get a deck of just your major's internships.",
   "Tip: press ↑ on your keyboard to mark the top card applied.",
 ];
 const TIP_INTERVAL_MS = 2400;

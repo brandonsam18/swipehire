@@ -57,7 +57,7 @@ const HIRING_SITES = new Set([
   "myworkdayjobs.com", "myworkdaysite.com", "greenhouse.io", "oraclecloud.com", "ashbyhq.com",
   "icims.com", "lever.co", "smartrecruiters.com", "applytojob.com", "workable.com", "eightfold.ai",
   "rippling.com", "avature.net", "paylocity.com", "jobvite.com", "taleo.net", "successfactors.com",
-  "ultipro.com", "adp.com", "bamboohr.com", "simplify.jobs", "brassring.com", "dayforcehcm.com",
+  "ultipro.com", "adp.com", "bamboohr.com", "simplify.jobs", "adzuna.com", "brassring.com", "dayforcehcm.com",
 ]);
 
 function compactName(companyName) {

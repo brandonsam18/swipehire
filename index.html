@@ -111,9 +111,12 @@
       <section class="intro">
         <h1>Level up your internship hunt</h1>
         <p>
-          Swipe through live tech internships from the
-          <a href="https://github.com/SimplifyJobs/Summer2027-Internships" target="_blank" rel="noopener">SimplifyJobs list</a>.
+          Swipe through live internships in every field, from business and healthcare to the arts and engineering.
           Every application earns XP, keeps your streak alive, and unlocks trophies.
+        </p>
+        <p class="intro-sources">
+          Postings from <a href="https://www.adzuna.com" target="_blank" rel="noopener">Jobs by Adzuna</a> and the
+          <a href="https://github.com/SimplifyJobs/Summer2027-Internships" target="_blank" rel="noopener">SimplifyJobs list</a>.
         </p>
       </section>
 
@@ -171,6 +174,12 @@
 
         <div id="filter-panel" class="filter-panel">
           <label class="field">
+            <span>Field</span>
+            <select id="field-select">
+              <option value="all">All fields</option>
+            </select>
+          </label>
+          <label id="role-filter" class="field" hidden>
             <span>Role</span>
             <select id="role-select">
               <option value="all">All roles</option>

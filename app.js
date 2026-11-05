@@ -10,6 +10,7 @@ import {
 } from "./activity.js";
 import { burstConfetti, showToast } from "./celebrate.js";
 import { renderDeck, swipeTopCard } from "./deck.js";
+import { FIELDS, fieldById, fieldIdOf } from "./fields.js";
 import { ACHIEVEMENTS, FRESH_POSTING_DAYS, XP_PER_SAVE, applicationXp, computeProgress } from "./game.js";
 import { METRO_AREAS, STATE_NAMES, isRemoteUs, metroIdOf, stateCodeOf } from "./locations.js";
 import { guessCompanyDomain, logoUrl } from "./logos.js";
@@ -25,8 +26,11 @@ import {
   showWelcomeScreen,
 } from "./welcome.js";
 
-const LISTINGS_URL =
+// Computing internships, kept by the SimplifyJobs community.
+const SIMPLIFY_LISTINGS_URL =
   "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json";
+// Internships in every other field too, fetched from Adzuna daily by a GitHub Action (see scripts/fetch-adzuna.mjs).
+const ADZUNA_LISTINGS_URL = "https://raw.githubusercontent.com/brandonsam18/swipehire/main/data/adzuna-internships.json";
 const STORAGE_KEYS = {
   viewMode: "viewMode",
   playingAsGuest: "playingAsGuest",
@@ -47,7 +51,9 @@ const filtersToggle = document.getElementById("filters-toggle");
 const activeFilterCount = document.getElementById("active-filter-count");
 const filterPanel = document.getElementById("filter-panel");
 const locationSelect = document.getElementById("location-select");
+const fieldSelect = document.getElementById("field-select");
 const roleSelect = document.getElementById("role-select");
+const roleFilter = document.getElementById("role-filter");
 const degreeSelect = document.getElementById("degree-select");
 const termSelect = document.getElementById("term-select");
 const modeTabs = document.querySelectorAll(".mode-tab");
@@ -149,6 +155,7 @@ function matchesFilters(posting) {
   if (locationKind === "metro" && !posting.metroIds.has(locationValue)) return false;
   if (locationKind === "state" && !posting.stateCodes.has(locationValue)) return false;
 
+  if (fieldSelect.value !== "all" && posting.fieldId !== fieldSelect.value) return false;
   if (roleSelect.value !== "all" && !posting.roleIds.has(roleSelect.value)) return false;
   if (termSelect.value !== "all" && !posting.terms.includes(termSelect.value)) return false;
   // Postings that don't list a degree aren't ruled out, so they match every degree.
@@ -170,7 +177,7 @@ function isUnseen(posting) {
 }
 
 function updateFilterCount() {
-  const activeCount = [roleSelect, locationSelect, degreeSelect, termSelect].filter((select) => select.value !== "all").length;
+  const activeCount = [fieldSelect, roleSelect, locationSelect, degreeSelect, termSelect].filter((select) => select.value !== "all").length;
   activeFilterCount.textContent = String(activeCount);
   activeFilterCount.hidden = activeCount === 0;
 }
@@ -219,6 +226,8 @@ const SPONSORSHIP_TAGS = {
 
 function createTags(posting) {
   const tags = createElement("div", "tags");
+  const field = fieldById(posting.fieldId);
+  tags.append(createTag(`${field.emoji} ${field.name}`, "tag-field"));
   const locationText =
     posting.locations.length > 2
       ? `${posting.locations.slice(0, 2).join(" · ")} +${posting.locations.length - 2} more`
@@ -266,7 +275,8 @@ function markApplied(posting) {
   const application = {
     at: new Date().toISOString(),
     fresh: postingAgeDays(posting) < FRESH_POSTING_DAYS,
-    roleIds: [...posting.roleIds],
+    // Fields without specific roles count as one kind of role, so the Explorer trophy works in every field.
+    roleIds: posting.roleIds.size > 0 ? [...posting.roleIds] : [`field:${posting.fieldId}`],
     metroIds: [...posting.metroIds],
   };
   appliedPostings[posting.id] = application;
@@ -583,12 +593,24 @@ function createOptionGroup(label, options) {
   return group;
 }
 
-// Adds every role that has at least one posting, with posting counts.
-function fillRoleSelect() {
-  const roleCounts = countBy(allPostings, (posting) => posting.roleIds);
-  for (const role of ROLES.filter((role) => roleCounts.has(role.id))) {
-    roleSelect.append(new Option(`${role.name} (${roleCounts.get(role.id).toLocaleString()})`, role.id));
+// Adds every field that has at least one posting, with posting counts.
+function fillFieldSelect() {
+  const fieldCounts = countBy(allPostings, (posting) => [posting.fieldId]);
+  for (const field of FIELDS.filter((field) => fieldCounts.has(field.id))) {
+    fieldSelect.append(new Option(`${field.emoji} ${field.name} (${fieldCounts.get(field.id).toLocaleString()})`, field.id));
   }
+}
+
+// Specific roles only exist for some fields, so the Role filter appears once
+// such a field is picked and lists the roles in it.
+function updateRoleSelect() {
+  const postingsInField = allPostings.filter((posting) => posting.fieldId === fieldSelect.value);
+  const roleCounts = countBy(postingsInField, (posting) => posting.roleIds);
+  const options = ROLES.filter((role) => roleCounts.has(role.id)).map(
+    (role) => new Option(`${role.name} (${roleCounts.get(role.id).toLocaleString()})`, role.id),
+  );
+  roleSelect.replaceChildren(new Option("All roles", "all"), ...options);
+  roleFilter.hidden = options.length === 0;
 }
 
 // Adds metro areas and states that have at least one posting, with posting counts.
@@ -621,12 +643,26 @@ function showLoading() {
   deckCount.textContent = "";
 }
 
+async function fetchListings(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
+
+// Both lists together. If one can't load, the other is enough to play with.
+async function fetchAllListings() {
+  const [simplify, adzuna] = await Promise.allSettled([
+    fetchListings(SIMPLIFY_LISTINGS_URL),
+    fetchListings(ADZUNA_LISTINGS_URL),
+  ]);
+  if (simplify.status === "rejected" && adzuna.status === "rejected") throw simplify.reason;
+  return [simplify, adzuna].flatMap((result) => (result.status === "fulfilled" ? result.value : []));
+}
+
 async function loadPostings() {
   showLoading();
   try {
-    const response = await fetch(LISTINGS_URL);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const listings = await response.json();
+    const listings = await fetchAllListings();
     const visibleListings = listings.filter((posting) => posting.is_visible !== false);
     postingsById = new Map(visibleListings.map((posting) => [posting.id, posting]));
     allPostings = visibleListings.filter((posting) => posting.active).sort((a, b) => b.date_posted - a.date_posted);
@@ -634,7 +670,9 @@ async function loadPostings() {
       posting.stateCodes = new Set(posting.locations.map(stateCodeOf).filter(Boolean));
       posting.metroIds = new Set(posting.locations.map(metroIdOf).filter(Boolean));
       posting.isRemoteUs = posting.locations.some(isRemoteUs);
-      posting.roleIds = new Set(roleIdsOf(posting));
+      posting.fieldId = fieldIdOf(posting);
+      // The role list describes computing jobs, so only SimplifyJobs postings get roles.
+      posting.roleIds = new Set(posting.source === "adzuna" ? [] : roleIdsOf(posting));
       posting.degrees ??= [];
     }
   } catch (error) {
@@ -647,7 +685,8 @@ async function loadPostings() {
 
   const terms = new Set(allPostings.flatMap((posting) => posting.terms));
   fillSelect(termSelect, [...terms].filter((term) => term !== "N/A").sort());
-  fillRoleSelect();
+  fillFieldSelect();
+  updateRoleSelect();
   fillLocationSelect();
   postingsLoaded = true;
   setLoadingStatus(`Dealt ${allPostings.length.toLocaleString()} internships!`);
@@ -799,6 +838,10 @@ function handleKeyDown(event) {
 for (const control of [roleSelect, locationSelect, degreeSelect, termSelect]) {
   control.addEventListener("change", resetAndRender);
 }
+fieldSelect.addEventListener("change", () => {
+  updateRoleSelect();
+  resetAndRender();
+});
 for (const tab of statusTabs) {
   tab.addEventListener("click", () => selectStatusTab(tab));
 }
