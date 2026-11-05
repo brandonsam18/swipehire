@@ -136,13 +136,9 @@ select {
 }
 
 .brand-mark {
-  display: grid;
-  place-items: center;
+  display: block;
   width: 32px;
   height: 32px;
-  border-radius: 9px;
-  background: var(--game-gradient);
-  color: #fff;
 }
 
 .brand-name {
@@ -1369,6 +1365,8 @@ body.splash-open {
 
 .splash-card-front {
   --fan: 0deg;
+  /* The logo's own purple, so the cyan crossbar stands out. */
+  background: #7c3aed;
   animation-name: card-bounce;
 }
 
