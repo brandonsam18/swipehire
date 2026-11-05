@@ -506,6 +506,27 @@ h2,
   color: var(--warning);
 }
 
+.tag-closed {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.posting.closed .posting-info,
+.posting.closed .avatar {
+  opacity: 0.6;
+}
+
+.closed-label {
+  cursor: default;
+  color: var(--muted);
+}
+
+.closed-label:hover {
+  background: var(--surface);
+}
+
 .tag-new {
   background: var(--accent-soft);
   color: var(--accent);

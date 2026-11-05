@@ -30,7 +30,12 @@ const LISTINGS_URL =
 const STORAGE_KEYS = {
   viewMode: "viewMode",
   playingAsGuest: "playingAsGuest",
+  closedNoticesShown: "closedNoticesShown",
 };
+// How many closed postings to name in the pop-up before saying "and N more".
+const CLOSED_NOTICE_NAMES = 2;
+// Rolling internships often fill after this many weeks, so older open postings get an "apply soon" hint.
+const AGING_POSTING_WEEKS = 6;
 const PAGE_SIZE = 50;
 const SKELETON_CARD_COUNT = 6;
 // Smaller icons are blurry when scaled up, so those companies keep their letter.
@@ -78,7 +83,10 @@ function saveJson(key, value) {
   }
 }
 
+// Open postings, newest first: what Discover and the All tab show.
 let allPostings = [];
+// Every posting in the data, open or closed, so saved and applied ones can still be shown after they close.
+let postingsById = new Map();
 let postingsLoaded = false;
 // Each maps posting id -> what happened (see activity.js).
 const appliedPostings = activity.applied;
@@ -226,7 +234,11 @@ function createTags(posting) {
   }
   const sponsorshipText = SPONSORSHIP_TAGS[posting.sponsorship];
   if (sponsorshipText) tags.append(createTag(sponsorshipText, "tag-warning"));
-  if (postingAgeDays(posting) < FRESH_POSTING_DAYS) tags.append(createTag("✨ Fresh · +25 XP", "tag-new"));
+  if (posting.active && postingAgeDays(posting) < FRESH_POSTING_DAYS) tags.append(createTag("✨ Fresh · +25 XP", "tag-new"));
+  const ageWeeks = Math.floor(postingAgeDays(posting) / 7);
+  if (posting.active && ageWeeks >= AGING_POSTING_WEEKS) {
+    tags.append(createTag(`⏳ ${ageWeeks} weeks old · may fill soon`, "tag-warning"));
+  }
   return tags;
 }
 
@@ -454,15 +466,15 @@ function renderDiscover() {
 function createPostingItem(posting) {
   const application = appliedPostings[posting.id];
   const isSaved = posting.id in savedPostings;
+  const isClosed = !posting.active;
   const item = createElement("li", "posting");
   item.classList.toggle("applied", Boolean(application));
+  item.classList.toggle("closed", isClosed);
 
+  const tags = createTags(posting);
+  if (isClosed) tags.prepend(createTag("🔒 Closed", "tag-closed"));
   const info = createElement("div", "posting-info");
-  info.append(
-    createElement("p", "company", posting.company_name),
-    createElement("h2", "title", posting.title),
-    createTags(posting),
-  );
+  info.append(createElement("p", "company", posting.company_name), createElement("h2", "title", posting.title), tags);
 
   const saveButton = createElement("button", "button button-secondary save-button", isSaved ? "★" : "☆");
   saveButton.type = "button";
@@ -480,7 +492,10 @@ function createPostingItem(posting) {
   appliedButton.addEventListener("click", () => toggleApplied(posting));
 
   const buttons = createElement("div", "posting-buttons");
-  buttons.append(createApplyLink(posting, "button button-secondary"), saveButton, appliedButton);
+  const applyControl = isClosed
+    ? createElement("span", "button button-secondary closed-label", "Posting closed")
+    : createApplyLink(posting, "button button-secondary");
+  buttons.append(applyControl, saveButton, appliedButton);
   const actions = createElement("div", "posting-actions");
   actions.append(createElement("span", "posted", formatPostedAge(posting)), buttons);
 
@@ -503,9 +518,19 @@ const EMPTY_LIST_TEXT = {
   all: "No internships match these filters. Try clearing the search or picking \"Anywhere\".",
 };
 
+// Saved or applied postings (open ones first), including any that have closed since.
+function trackedPostings() {
+  const ids = Object.keys(statusFilter === "applied" ? appliedPostings : savedPostings);
+  return ids
+    .map((id) => postingsById.get(id))
+    .filter(Boolean)
+    .sort((a, b) => Number(b.active) - Number(a.active) || b.date_posted - a.date_posted);
+}
+
 function renderBrowse() {
   if (!postingsLoaded) return;
-  const matching = allPostings.filter((posting) => matchesFilters(posting) && matchesStatus(posting));
+  const source = statusFilter === "all" ? allPostings : trackedPostings();
+  const matching = source.filter((posting) => matchesFilters(posting) && matchesStatus(posting));
   const noun = matching.length === 1 ? "internship" : "internships";
   summary.textContent = `${matching.length.toLocaleString()} ${noun}`;
   postingList.replaceChildren(...matching.slice(0, visibleCount).map(createPostingItem));
@@ -602,10 +627,10 @@ async function loadPostings() {
     const response = await fetch(LISTINGS_URL);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const listings = await response.json();
-    allPostings = listings
-      .filter((posting) => posting.active && posting.is_visible !== false)
-      .sort((a, b) => b.date_posted - a.date_posted);
-    for (const posting of allPostings) {
+    const visibleListings = listings.filter((posting) => posting.is_visible !== false);
+    postingsById = new Map(visibleListings.map((posting) => [posting.id, posting]));
+    allPostings = visibleListings.filter((posting) => posting.active).sort((a, b) => b.date_posted - a.date_posted);
+    for (const posting of visibleListings) {
       posting.stateCodes = new Set(posting.locations.map(stateCodeOf).filter(Boolean));
       posting.metroIds = new Set(posting.locations.map(metroIdOf).filter(Boolean));
       posting.isRemoteUs = posting.locations.some(isRemoteUs);
@@ -631,11 +656,30 @@ async function loadPostings() {
 
 // ---------- Accounts ----------
 
+// Tells the player, once per posting, about saved postings that closed before they applied.
+function announceClosedSavedPostings() {
+  const shown = new Set(loadJson(STORAGE_KEYS.closedNoticesShown, []));
+  const newlyClosed = Object.keys(savedPostings)
+    .filter((id) => !(id in appliedPostings) && !shown.has(id))
+    .map((id) => postingsById.get(id))
+    .filter((posting) => posting && !posting.active);
+  if (newlyClosed.length === 0) return;
+
+  const names = newlyClosed.slice(0, CLOSED_NOTICE_NAMES).map((posting) => posting.company_name);
+  const extra = newlyClosed.length - names.length;
+  const nameList = extra > 0 ? `${names.join(", ")} and ${extra} more` : names.join(" and ");
+  const noun = newlyClosed.length === 1 ? "A saved posting has" : `${newlyClosed.length} saved postings have`;
+  showToast(`🔒 ${noun} closed: ${nameList}. See Browse → Saved.`, "info");
+  for (const posting of newlyClosed) shown.add(posting.id);
+  saveJson(STORAGE_KEYS.closedNoticesShown, [...shown]);
+}
+
 // Opens the game once both the internships and the player's account have loaded.
 function finishStartup() {
   if (startupDone || !postingsLoaded || !userKnown) return;
   startupDone = true;
   render();
+  announceClosedSavedPostings();
   if (currentUser || loadJson(STORAGE_KEYS.playingAsGuest, false)) {
     hideSplash();
   } else {
@@ -690,6 +734,7 @@ async function handleUserChanged(user) {
   renderAccountButton();
   if (startupDone) {
     resetAndRender();
+    announceClosedSavedPostings();
     if (user && isSplashOpen()) {
       hideSplash();
       showToast(`👋 Welcome, ${user.displayName || user.email}!`, "info");
