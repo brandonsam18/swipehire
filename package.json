@@ -1,0 +1,10 @@
+{
+  "name": "swipehire",
+  "private": true,
+  "type": "module",
+  "description": "Swipe through live internships in every field, track applications, and level up.",
+  "scripts": {
+    "test": "node --test",
+    "fetch-adzuna": "node scripts/fetch-adzuna.mjs"
+  }
+}
