@@ -72,3 +72,9 @@ test("closed postings are dropped after 60 days", () => {
   const merged = mergePostings([longClosed, recentlyClosed], [], new Map(), NOW);
   assert.deepEqual(merged.map((item) => item.id), ["kept"]);
 });
+
+test("postings in a category skipped after server errors stay open", () => {
+  const cutoffs = new Map([["teaching-jobs", Infinity]]);
+  const merged = mergePostings([posting("a", 5)], [], cutoffs, NOW);
+  assert.equal(merged[0].active, true);
+});

@@ -23,6 +23,9 @@ const DELAY_BETWEEN_REQUESTS_MS = 2600;
 // Closed postings are kept this long so saved ones can still say "closed".
 const KEEP_CLOSED_DAYS = 60;
 const SECONDS_PER_DAY = 86400;
+// Adzuna sometimes answers with a brief server error (HTTP 5xx); those requests are tried again.
+const RETRIES = 2;
+const RETRY_DELAY_MS = 10000;
 
 // Adzuna's search matches "internal" and "international" too; only real internships pass this.
 const INTERNSHIP_TITLE = /\bintern(s|ship|ships)?\b/i;
@@ -108,9 +111,15 @@ async function fetchPage(category, page, credentials) {
     sort_by: "date",
     "content-type": "application/json",
   });
-  const response = await fetch(`${API_URL}/${page}?${params}`);
-  if (!response.ok) throw new Error(`Adzuna returned HTTP ${response.status} for ${category} page ${page}`);
-  return (await response.json()).results ?? [];
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetch(`${API_URL}/${page}?${params}`);
+    if (response.ok) return (await response.json()).results ?? [];
+    const error = new Error(`Adzuna returned HTTP ${response.status} for ${category} page ${page}`);
+    // A wrong key (401) or used-up limit (429) won't fix itself by retrying.
+    if (response.status < 500 || attempt === RETRIES) throw error;
+    console.warn(`${error.message}; trying again.`);
+    await wait(RETRY_DELAY_MS);
+  }
 }
 
 async function readPreviousPostings() {
@@ -133,9 +142,20 @@ async function main() {
   const fetched = [];
   const cutoffs = new Map();
 
+  const failedCategories = [];
   for (const category of [...ADZUNA_CATEGORIES, ...EXTRA_CATEGORIES]) {
     for (let page = 1; page <= MAX_PAGES_PER_CATEGORY; page++) {
-      const jobs = await fetchPage(category, page, credentials);
+      let jobs;
+      try {
+        jobs = await fetchPage(category, page, credentials);
+      } catch (error) {
+        if (!error.message.includes("HTTP 5")) throw error;
+        // Skip the rest of this category today; an Infinity cutoff keeps its postings from being marked closed.
+        console.warn(`${error.message}; skipping ${category} until the next run.`);
+        failedCategories.push(category);
+        cutoffs.set(category, Infinity);
+        break;
+      }
       await wait(DELAY_BETWEEN_REQUESTS_MS);
       const postings = jobs.map((job) => postingFromAdzunaJob(job, nowSeconds)).filter(Boolean);
       fetched.push(...postings);
@@ -154,6 +174,7 @@ async function main() {
   await writeFile(OUTPUT_FILE, `${JSON.stringify(postings)}\n`);
   const openCount = postings.filter((posting) => posting.active).length;
   console.log(`Wrote ${postings.length} postings (${openCount} open) to ${OUTPUT_FILE}.`);
+  if (failedCategories.length > 0) console.warn(`Skipped after server errors: ${failedCategories.join(", ")}`);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
