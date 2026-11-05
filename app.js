@@ -44,8 +44,8 @@ const PAGE_SIZE = 50;
 const SKELETON_CARD_COUNT = 6;
 // Smaller icons are blurry when scaled up, so those companies keep their letter.
 const MIN_LOGO_PIXELS = 32;
-// Shades of the app's Ocean blue-teal, so letter badges stay in the two-color palette.
-const AVATAR_COLORS = ["#006989", "#00546e", "#0b4d61", "#2a7c95", "#3d6b79", "#00495f"];
+// Shades of the app's Teal Green, so letter badges stay in the two-color palette.
+const AVATAR_COLORS = ["#3d8d7a", "#2f7363", "#2a6b5c", "#4f9c89", "#356f61", "#24594c"];
 
 const searchInput = document.getElementById("search-input");
 const filtersToggle = document.getElementById("filters-toggle");

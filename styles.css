@@ -1,72 +1,72 @@
-/* Two-color palette: Dreamy (#eaebed) and Ocean (#006989), with lighter and
-   darker shades of each, used for both flat colors and the gradients and glows. */
+/* Two-color palette: Teal Green (#3d8d7a) and Lemon Chiffon (#fffacd), with
+   lighter and darker shades of each, used for flat colors, gradients, and glows. */
 :root {
   color-scheme: light;
-  --dreamy: #eaebed;
-  --ocean: #006989;
-  --bg: var(--dreamy);
-  --surface: #f6f7f8;
-  --surface-muted: #dfe2e5;
-  --text: #00303f;
-  --muted: #4a6670;
-  --border: #d2d7dc;
-  --border-strong: #b3c2c9;
-  --accent: var(--ocean);
-  --accent-hover: #00546e;
-  --accent-soft: #d3e3e9;
-  --on-accent: var(--dreamy);
-  --success: var(--ocean);
-  --success-soft: #d3e3e9;
-  --success-border: #9cc2cf;
-  --error: #00303f;
-  --warning: #4a6670;
-  --warning-border: #9fb4bc;
-  --shadow-sm: 0 1px 2px rgba(0, 48, 63, 0.06);
-  --shadow-md: 0 4px 16px rgba(0, 48, 63, 0.1);
+  --chiffon: #fffacd;
+  --teal: #3d8d7a;
+  --bg: var(--chiffon);
+  --surface: #fffde8;
+  --surface-muted: #f5efc4;
+  --text: #12382f;
+  --muted: #4f6b62;
+  --border: #e9e2b2;
+  --border-strong: #cdc89a;
+  --accent: var(--teal);
+  --accent-hover: #2f7363;
+  --accent-soft: #e2edcf;
+  --on-accent: var(--chiffon);
+  --success: var(--teal);
+  --success-soft: #e2edcf;
+  --success-border: #a9cdbf;
+  --error: #12382f;
+  --warning: #4f6b62;
+  --warning-border: #c2c99f;
+  --shadow-sm: 0 1px 2px rgba(18, 56, 47, 0.06);
+  --shadow-md: 0 4px 16px rgba(18, 56, 47, 0.1);
   --radius: 14px;
-  /* Filled shapes (buttons, level badge, XP bar) always carry Dreamy text, so this
-     gradient stays dark enough in both themes. */
-  --game-gradient: linear-gradient(135deg, #005570, #1a809f);
+  /* Filled shapes (buttons, level badge, XP bar) always carry Lemon Chiffon text,
+     so this gradient stays dark enough in both themes. */
+  --game-gradient: linear-gradient(135deg, #2a6b5c, #3d8d7a);
   /* Gradient headings: dark on the light page, light on the dark page. */
-  --text-gradient: linear-gradient(135deg, #00546e, #2a8fae);
-  --gold: var(--ocean);
-  --gold-soft: #d3e3e9;
-  --danger: #00303f;
-  --glow: 0 0 0 1px rgba(0, 105, 137, 0.25), 0 10px 30px rgba(0, 105, 137, 0.18);
-  --halo-ocean: rgba(0, 105, 137, 0.16);
-  --halo-light: rgba(127, 185, 203, 0.22);
+  --text-gradient: linear-gradient(135deg, #24594c, #3d8d7a);
+  --gold: var(--teal);
+  --gold-soft: #e2edcf;
+  --danger: #12382f;
+  --glow: 0 0 0 1px rgba(61, 141, 122, 0.25), 0 10px 30px rgba(61, 141, 122, 0.18);
+  --halo-teal: rgba(61, 141, 122, 0.16);
+  --halo-light: rgba(143, 203, 185, 0.25);
 }
 
 /* Dark theme: chosen with the sun/moon button, or from the device setting until then.
-   Deep shades of Ocean, with Dreamy text and light Ocean accents. */
+   Deep shades of Teal Green, with Lemon Chiffon text and light teal accents. */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #00202a;
-  --surface: #032c39;
-  --surface-muted: #083a4a;
-  --text: var(--dreamy);
-  --muted: #9fb7bf;
-  --border: #0d4456;
-  --border-strong: #1b5a6e;
-  --accent: #7fb9cb;
-  --accent-hover: #a3cddb;
-  --accent-soft: #0b4253;
-  --on-accent: #00202a;
-  --success: #7fb9cb;
-  --success-soft: #0b4253;
-  --success-border: #1b5a6e;
-  --error: var(--dreamy);
-  --warning: #9fb7bf;
-  --warning-border: #2a6476;
+  --bg: #0f2620;
+  --surface: #15322a;
+  --surface-muted: #1d3f35;
+  --text: var(--chiffon);
+  --muted: #b9c6ae;
+  --border: #24493f;
+  --border-strong: #326055;
+  --accent: #8fcbb9;
+  --accent-hover: #addbcd;
+  --accent-soft: #1f4a3f;
+  --on-accent: #0f2620;
+  --success: #8fcbb9;
+  --success-soft: #1f4a3f;
+  --success-border: #326055;
+  --error: var(--chiffon);
+  --warning: #b9c6ae;
+  --warning-border: #3f6a5c;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
-  --text-gradient: linear-gradient(135deg, #7fb9cb, var(--dreamy));
-  --gold: #7fb9cb;
-  --gold-soft: #0b4253;
-  --danger: var(--dreamy);
-  --glow: 0 0 0 1px rgba(127, 185, 203, 0.3), 0 12px 40px rgba(0, 105, 137, 0.45);
-  --halo-ocean: rgba(0, 105, 137, 0.4);
-  --halo-light: rgba(127, 185, 203, 0.12);
+  --text-gradient: linear-gradient(135deg, #8fcbb9, var(--chiffon));
+  --gold: #8fcbb9;
+  --gold-soft: #1f4a3f;
+  --danger: var(--chiffon);
+  --glow: 0 0 0 1px rgba(143, 203, 185, 0.3), 0 12px 40px rgba(61, 141, 122, 0.45);
+  --halo-teal: rgba(61, 141, 122, 0.4);
+  --halo-light: rgba(255, 250, 205, 0.07);
 }
 
 [hidden] {
@@ -80,7 +80,7 @@
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 15% -10%, var(--halo-ocean), transparent 40%),
+    radial-gradient(circle at 15% -10%, var(--halo-teal), transparent 40%),
     radial-gradient(circle at 90% 0%, var(--halo-light), transparent 35%),
     var(--bg);
   background-attachment: fixed;
@@ -197,7 +197,7 @@ select {
 
 .chip-level {
   background: var(--game-gradient);
-  color: var(--dreamy);
+  color: var(--chiffon);
 }
 
 /* Layout */
@@ -447,7 +447,7 @@ h2,
   border-radius: 11px;
   position: relative;
   overflow: hidden;
-  color: var(--dreamy);
+  color: var(--chiffon);
   font-weight: 700;
   font-size: 1.1rem;
 }
@@ -686,9 +686,9 @@ h2,
   height: 64px;
   border-radius: 18px;
   background: var(--game-gradient);
-  color: var(--dreamy);
+  color: var(--chiffon);
   line-height: 1;
-  box-shadow: 0 8px 24px rgba(0, 105, 137, 0.4);
+  box-shadow: 0 8px 24px rgba(61, 141, 122, 0.4);
 }
 
 .level-label {
@@ -727,7 +727,7 @@ h2,
   height: 100%;
   border-radius: inherit;
   background: var(--game-gradient);
-  box-shadow: 0 0 12px rgba(127, 185, 203, 0.6);
+  box-shadow: 0 0 12px rgba(143, 203, 185, 0.6);
   transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -881,8 +881,8 @@ h2,
 
 .mode-tab[aria-selected="true"] {
   background: var(--game-gradient);
-  color: var(--dreamy);
-  box-shadow: 0 4px 14px rgba(0, 105, 137, 0.35);
+  color: var(--chiffon);
+  box-shadow: 0 4px 14px rgba(61, 141, 122, 0.35);
 }
 
 /* Card deck */
@@ -1169,7 +1169,7 @@ kbd {
 }
 
 .toast-xp {
-  border-color: rgba(0, 105, 137, 0.6);
+  border-color: rgba(61, 141, 122, 0.6);
 }
 
 .toast-quest {
@@ -1181,7 +1181,7 @@ kbd {
 .toast-level {
   border: 0;
   background: var(--game-gradient);
-  color: var(--dreamy);
+  color: var(--chiffon);
   font-size: 1.05rem;
 }
 
@@ -1225,7 +1225,7 @@ kbd {
 }
 
 .trophy-dialog::backdrop {
-  background: rgba(0, 32, 42, 0.6);
+  background: rgba(15, 38, 32, 0.6);
   backdrop-filter: blur(4px);
 }
 
@@ -1310,7 +1310,7 @@ body.splash-open {
   overflow-y: auto;
   padding: 24px 16px;
   background:
-    radial-gradient(circle at 20% 10%, var(--halo-ocean), transparent 45%),
+    radial-gradient(circle at 20% 10%, var(--halo-teal), transparent 45%),
     radial-gradient(circle at 85% 90%, var(--halo-light), transparent 45%),
     var(--bg);
   animation: splash-in 0.3s ease;
@@ -1362,7 +1362,7 @@ body.splash-open {
   place-items: center;
   border-radius: 16px;
   background: var(--game-gradient);
-  box-shadow: 0 10px 30px rgba(0, 105, 137, 0.4);
+  box-shadow: 0 10px 30px rgba(61, 141, 122, 0.4);
   font-size: 2.6rem;
   animation: card-fan 1.8s ease-in-out infinite;
 }
@@ -1379,8 +1379,8 @@ body.splash-open {
 
 .splash-card-front {
   --fan: 0deg;
-  /* Solid Ocean like the logo, in both themes. */
-  background: var(--ocean);
+  /* Solid Teal Green like the logo, in both themes. */
+  background: var(--teal);
   animation-name: card-bounce;
 }
 
@@ -1623,7 +1623,7 @@ body.splash-open {
   padding: 0;
   border: 0;
   background: var(--game-gradient);
-  color: var(--dreamy);
+  color: var(--chiffon);
 }
 
 .account-dialog {

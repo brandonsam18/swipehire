@@ -4,8 +4,8 @@ const TOAST_DURATION_MS = 2800;
 // Older messages make room so pop-ups never cover the whole screen.
 const MAX_TOASTS = 3;
 const CONFETTI_DURATION_MS = 1800;
-// The app's two colors (Ocean and Dreamy) and shades between them.
-const CONFETTI_COLORS = ["#006989", "#eaebed", "#2a7c95", "#9cc2cf", "#00546e"];
+// The app's two colors (Teal Green and Lemon Chiffon) and shades between them.
+const CONFETTI_COLORS = ["#3d8d7a", "#fffacd", "#8fcbb9", "#2a6b5c", "#e9e2b2"];
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
