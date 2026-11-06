@@ -9,6 +9,7 @@ import {
   useGuest,
 } from "./activity.js";
 import { burstConfetti, showToast } from "./celebrate.js";
+import { setTextWithCoins } from "./coin-icon.js";
 import { renderDeck, swipeTopCard } from "./deck.js";
 import { FIELDS, fieldById, fieldIdOf } from "./fields.js";
 import {
@@ -447,7 +448,8 @@ function createShopItem({ icon, name, detail, equipped }, actionButton) {
 }
 
 function createShopButton(text, onClick, { disabled = false, primary = false } = {}) {
-  const button = createElement("button", `button ${primary ? "applied-button" : "button-secondary"}`, text);
+  const button = createElement("button", `button ${primary ? "applied-button" : "button-secondary"}`);
+  setTextWithCoins(button, text);
   button.type = "button";
   button.disabled = disabled;
   button.addEventListener("click", onClick);
@@ -472,7 +474,7 @@ function renderChestStage(wallet) {
       : `Next chest in ${wallet.applicationsToNextChest} application${wallet.applicationsToNextChest === 1 ? "" : "s"}, or finish all 3 daily quests.`;
   openButton.disabled = wallet.chestsAvailable === 0;
   prizeText.hidden = !chestRevealText;
-  prizeText.textContent = chestRevealText ?? "";
+  setTextWithCoins(prizeText, chestRevealText ?? "");
 }
 
 function renderShop() {

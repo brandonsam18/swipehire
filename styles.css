@@ -1435,6 +1435,14 @@ kbd {
   color: var(--accent);
 }
 
+.coin-icon {
+  display: inline-block;
+  width: 1.15em;
+  height: 1.15em;
+  margin: 0 0.1em;
+  vertical-align: -0.2em;
+}
+
 .chest-badge {
   position: absolute;
   top: -8px;

@@ -1,4 +1,5 @@
 // Pop-up messages and confetti for game moments.
+import { setTextWithCoins } from "./coin-icon.js";
 
 const TOAST_DURATION_MS = 2800;
 // Older messages make room so pop-ups never cover the whole screen.
@@ -25,7 +26,7 @@ export function showToast(text, variant = "xp") {
   }
   const toast = document.createElement("div");
   toast.className = `toast toast-${variant}`;
-  toast.textContent = text;
+  setTextWithCoins(toast, text);
   toastStack.append(toast);
   while (toastStack.children.length > MAX_TOASTS) toastStack.firstElementChild.remove();
 
