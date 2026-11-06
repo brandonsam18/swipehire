@@ -279,6 +279,10 @@ select {
   letter-spacing: -0.01em;
 }
 
+.logo-defs {
+  position: absolute;
+}
+
 .brand-mark {
   display: block;
   width: 32px;
@@ -1724,8 +1728,8 @@ body.splash-open {
 
 .splash-card-front {
   --fan: 0deg;
-  /* Solid Teal Green like the logo, in both themes. */
-  background: var(--brand);
+  /* The logo's fixed charcoal, the same in every theme. */
+  background: #1f2328;
   animation-name: card-bounce;
 }
 

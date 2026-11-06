@@ -39,13 +39,24 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body class="splash-open">
+    <!-- The SwipeHire letters, drawn once for the top bar and loading card. The logo is neutral
+         charcoal, white, and gray in every theme, so it never changes with the shop theme. -->
+    <svg width="0" height="0" class="logo-defs" aria-hidden="true">
+      <defs>
+        <g id="sh-letters" transform="skewX(-10) translate(5 0)" fill="none" stroke-linecap="round" stroke-width="6.5">
+          <path d="M29 18C25 13 12 13 12 21C12 28 22 29 26 32C31 35 32 46 22 48C16 49 12 47 10 44" stroke="#ffffff" />
+          <path d="M38 15V49M52 15V49" stroke="#ffffff" />
+          <path d="M26 32H52" stroke="#9aa1a9" />
+        </g>
+      </defs>
+    </svg>
     <div id="splash" class="splash" role="dialog" aria-modal="true" aria-labelledby="splash-title">
       <div class="splash-inner">
         <button id="splash-close" class="icon-button splash-close" type="button" aria-label="Back to the game" hidden>✕</button>
         <div class="splash-logo" aria-hidden="true">
           <span class="splash-card splash-card-back"></span>
           <span class="splash-card splash-card-middle"></span>
-          <span class="splash-card splash-card-front"><img src="logo-mark.svg" alt="" width="64" height="50" /></span>
+          <span class="splash-card splash-card-front"><svg viewBox="4 10 56 44" width="64" height="50" aria-hidden="true"><use href="#sh-letters" /></svg></span>
         </div>
         <h1 id="splash-title" class="splash-title">SwipeHire</h1>
 
@@ -101,7 +112,10 @@
     <header class="topbar">
       <div class="topbar-inner">
         <div class="brand">
-          <img class="brand-mark" src="logo.svg" alt="" width="32" height="32" />
+          <svg class="brand-mark" viewBox="0 0 64 64" width="32" height="32" aria-hidden="true">
+            <rect width="64" height="64" rx="14" fill="#1f2328" />
+            <use href="#sh-letters" />
+          </svg>
           <span class="brand-name">SwipeHire</span>
         </div>
         <div class="topbar-chips">

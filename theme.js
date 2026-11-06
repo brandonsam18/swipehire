@@ -42,16 +42,24 @@ export function setUpThemeToggle(button) {
 
 const PALETTE_STORAGE_KEY = "palette";
 const DEFAULT_PALETTE = "teal";
+// Each theme's color for the browser bar on phones. The logo itself never changes.
+const PALETTE_BAR_COLORS = {
+  teal: "#3d8d7a",
+  ocean: "#006989",
+  classic: "#7c3aed",
+};
 
 /** Shows a shop theme's colors (see [data-palette] in styles.css) and remembers it for the next visit. */
 export function applyPalette(paletteId) {
-  if (paletteId && paletteId !== DEFAULT_PALETTE) {
-    document.documentElement.dataset.palette = paletteId;
+  const id = PALETTE_BAR_COLORS[paletteId] ? paletteId : DEFAULT_PALETTE;
+  if (id !== DEFAULT_PALETTE) {
+    document.documentElement.dataset.palette = id;
   } else {
     delete document.documentElement.dataset.palette;
   }
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", PALETTE_BAR_COLORS[id]);
   try {
-    localStorage.setItem(PALETTE_STORAGE_KEY, paletteId || DEFAULT_PALETTE);
+    localStorage.setItem(PALETTE_STORAGE_KEY, id);
   } catch {
     // The theme still shows; it just won't be ready before the page loads next time.
   }
