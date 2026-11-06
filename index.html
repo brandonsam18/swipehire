@@ -21,6 +21,13 @@
           theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
         }
         document.documentElement.dataset.theme = theme;
+        // The shop theme the player equipped (see shop.js), so its colors show from the first frame.
+        try {
+          const palette = localStorage.getItem("palette");
+          if (palette && palette !== "teal") document.documentElement.dataset.palette = palette;
+        } catch {
+          // No saved theme; the default colors apply.
+        }
       })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -128,6 +135,7 @@
             </div>
             <div class="player-info">
               <p id="level-title" class="player-title">Intern Hopeful</p>
+              <p id="equipped-title" class="equipped-title" hidden></p>
               <div id="xp-bar" class="xp-bar" role="progressbar" aria-label="XP toward next level" aria-valuemin="0">
                 <div id="xp-fill" class="xp-fill"></div>
               </div>
@@ -146,6 +154,11 @@
             <button id="trophies-button" class="stat stat-button" type="button">
               <span id="trophy-count" class="stat-value">0</span>
               <span class="stat-label">🏆 trophies</span>
+            </button>
+            <button id="shop-button" class="stat stat-button" type="button" aria-label="Coins and shop">
+              <span id="chest-badge" class="chest-badge" hidden></span>
+              <span id="coin-count" class="stat-value">0</span>
+              <span class="stat-label">🪙 coins · shop</span>
             </button>
           </div>
         </div>
@@ -250,6 +263,43 @@
         <button id="trophy-close" class="icon-button" type="button" aria-label="Close trophy case">✕</button>
       </div>
       <ul id="trophy-grid" class="trophy-grid"></ul>
+    </dialog>
+
+    <dialog id="shop-dialog" class="trophy-dialog shop-dialog" aria-labelledby="shop-heading">
+      <div class="dialog-header">
+        <h2 id="shop-heading">Shop</h2>
+        <span class="shop-balance">🪙 <span id="shop-coins">0</span></span>
+        <button id="shop-close" class="icon-button" type="button" aria-label="Close shop">✕</button>
+      </div>
+
+      <section class="shop-section chest-section" aria-labelledby="chest-heading">
+        <h3 id="chest-heading" class="shop-section-title">Loot chests</h3>
+        <div id="chest-stage" class="chest-stage">
+          <span id="chest-icon" class="chest-icon" aria-hidden="true">🎁</span>
+          <div class="chest-info">
+            <p id="chest-text" class="chest-text"></p>
+            <p id="chest-prize" class="chest-prize" aria-live="polite" hidden></p>
+          </div>
+          <button id="open-chest-button" class="button applied-button" type="button">Open chest</button>
+        </div>
+      </section>
+
+      <section class="shop-section" aria-labelledby="freeze-heading">
+        <h3 id="freeze-heading" class="shop-section-title">Power-ups</h3>
+        <ul id="freeze-list" class="shop-list"></ul>
+      </section>
+
+      <section class="shop-section" aria-labelledby="theme-heading">
+        <h3 id="theme-heading" class="shop-section-title">Themes</h3>
+        <ul id="theme-list" class="shop-list"></ul>
+      </section>
+
+      <section class="shop-section" aria-labelledby="title-heading">
+        <h3 id="title-heading" class="shop-section-title">Titles</h3>
+        <ul id="title-list" class="shop-list"></ul>
+      </section>
+
+      <p class="shop-earn-hint">Earn coins by applying (10, +5 if fresh), saving (2), finishing quests (25), unlocking trophies (50), and leveling up (100).</p>
     </dialog>
 
     <dialog id="account-dialog" class="trophy-dialog account-dialog" aria-labelledby="account-heading">

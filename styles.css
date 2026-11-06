@@ -2,20 +2,20 @@
    lighter and darker shades of each, used for flat colors, gradients, and glows. */
 :root {
   color-scheme: light;
-  --chiffon: #fffacd;
-  --teal: #3d8d7a;
-  --bg: var(--chiffon);
+  --brand-light: #fffacd;
+  --brand: #3d8d7a;
+  --bg: var(--brand-light);
   --surface: #fffde8;
   --surface-muted: #f5efc4;
   --text: #12382f;
   --muted: #4f6b62;
   --border: #e9e2b2;
   --border-strong: #cdc89a;
-  --accent: var(--teal);
+  --accent: var(--brand);
   --accent-hover: #2f7363;
   --accent-soft: #e2edcf;
-  --on-accent: var(--chiffon);
-  --success: var(--teal);
+  --on-accent: var(--brand-light);
+  --success: var(--brand);
   --success-soft: #e2edcf;
   --success-border: #a9cdbf;
   --error: #12382f;
@@ -29,12 +29,14 @@
   --game-gradient: linear-gradient(135deg, #2a6b5c, #3d8d7a);
   /* Gradient headings: dark on the light page, light on the dark page. */
   --text-gradient: linear-gradient(135deg, #24594c, #3d8d7a);
-  --gold: var(--teal);
+  --gold: var(--brand);
   --gold-soft: #e2edcf;
   --danger: #12382f;
   --glow: 0 0 0 1px rgba(61, 141, 122, 0.25), 0 10px 30px rgba(61, 141, 122, 0.18);
-  --halo-teal: rgba(61, 141, 122, 0.16);
+  --halo-main: rgba(61, 141, 122, 0.16);
   --halo-light: rgba(143, 203, 185, 0.25);
+  --brand-glow: #8fcbb9;
+  --backdrop: rgba(15, 38, 32, 0.6);
 }
 
 /* Dark theme: chosen with the sun/moon button, or from the device setting until then.
@@ -44,7 +46,7 @@
   --bg: #0f2620;
   --surface: #15322a;
   --surface-muted: #1d3f35;
-  --text: var(--chiffon);
+  --text: var(--brand-light);
   --muted: #b9c6ae;
   --border: #24493f;
   --border-strong: #326055;
@@ -55,18 +57,146 @@
   --success: #8fcbb9;
   --success-soft: #1f4a3f;
   --success-border: #326055;
-  --error: var(--chiffon);
+  --error: var(--brand-light);
   --warning: #b9c6ae;
   --warning-border: #3f6a5c;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
-  --text-gradient: linear-gradient(135deg, #8fcbb9, var(--chiffon));
+  --text-gradient: linear-gradient(135deg, #8fcbb9, var(--brand-light));
   --gold: #8fcbb9;
   --gold-soft: #1f4a3f;
-  --danger: var(--chiffon);
+  --danger: var(--brand-light);
   --glow: 0 0 0 1px rgba(143, 203, 185, 0.3), 0 12px 40px rgba(61, 141, 122, 0.45);
-  --halo-teal: rgba(61, 141, 122, 0.4);
+  --halo-main: rgba(61, 141, 122, 0.4);
   --halo-light: rgba(255, 250, 205, 0.07);
+}
+
+/* Themes from the shop. Each swaps the palette in light and dark mode; layout,
+   gradients, and glows stay the same. Teal & Chiffon above is the default. */
+:root[data-palette="ocean"] {
+  --brand: #006989;
+  --brand-light: #eaebed;
+  --brand-glow: #7fb9cb;
+  --backdrop: rgba(0, 32, 42, 0.6);
+  --bg: #eaebed;
+  --surface: #f6f7f8;
+  --surface-muted: #dfe2e5;
+  --text: #00303f;
+  --muted: #4a6670;
+  --border: #d2d7dc;
+  --border-strong: #b3c2c9;
+  --accent: #006989;
+  --accent-hover: #00546e;
+  --accent-soft: #d3e3e9;
+  --on-accent: #eaebed;
+  --success: #006989;
+  --success-soft: #d3e3e9;
+  --success-border: #9cc2cf;
+  --error: #00303f;
+  --warning: #4a6670;
+  --warning-border: #9fb4bc;
+  --shadow-sm: 0 1px 2px rgba(0, 48, 63, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 48, 63, 0.1);
+  --game-gradient: linear-gradient(135deg, #005570, #1a809f);
+  --text-gradient: linear-gradient(135deg, #00546e, #2a8fae);
+  --gold: #006989;
+  --gold-soft: #d3e3e9;
+  --danger: #00303f;
+  --glow: 0 0 0 1px rgba(0, 105, 137, 0.25), 0 10px 30px rgba(0, 105, 137, 0.18);
+  --halo-main: rgba(0, 105, 137, 0.16);
+  --halo-light: rgba(127, 185, 203, 0.22);
+}
+
+:root[data-palette="ocean"][data-theme="dark"] {
+  --bg: #00202a;
+  --surface: #032c39;
+  --surface-muted: #083a4a;
+  --text: #eaebed;
+  --muted: #9fb7bf;
+  --border: #0d4456;
+  --border-strong: #1b5a6e;
+  --accent: #7fb9cb;
+  --accent-hover: #a3cddb;
+  --accent-soft: #0b4253;
+  --on-accent: #00202a;
+  --success: #7fb9cb;
+  --success-soft: #0b4253;
+  --success-border: #1b5a6e;
+  --error: #eaebed;
+  --warning: #9fb7bf;
+  --warning-border: #2a6476;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+  --text-gradient: linear-gradient(135deg, #7fb9cb, #eaebed);
+  --gold: #7fb9cb;
+  --gold-soft: #0b4253;
+  --danger: #eaebed;
+  --glow: 0 0 0 1px rgba(127, 185, 203, 0.3), 0 12px 40px rgba(0, 105, 137, 0.45);
+  --halo-main: rgba(0, 105, 137, 0.4);
+  --halo-light: rgba(127, 185, 203, 0.12);
+}
+
+/* The app's original purple and cyan look. */
+:root[data-palette="classic"] {
+  --brand: #7c3aed;
+  --brand-light: #ffffff;
+  --brand-glow: #22d3ee;
+  --backdrop: rgba(5, 7, 12, 0.6);
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --surface-muted: #f1f3f6;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e4e7ec;
+  --border-strong: #cfd5de;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #eef2ff;
+  --on-accent: #ffffff;
+  --success: #15803d;
+  --success-soft: #ecfdf3;
+  --success-border: #b7e4c7;
+  --error: #b42318;
+  --warning: #b45309;
+  --warning-border: #f3c98b;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --game-gradient: linear-gradient(135deg, #8b5cf6, #22d3ee);
+  --text-gradient: linear-gradient(135deg, #8b5cf6, #22d3ee);
+  --gold: #d97706;
+  --gold-soft: #fef3c7;
+  --danger: #e11d48;
+  --glow: 0 0 0 1px rgba(139, 92, 246, 0.25), 0 10px 30px rgba(139, 92, 246, 0.18);
+  --halo-main: rgba(139, 92, 246, 0.18);
+  --halo-light: rgba(34, 211, 238, 0.12);
+}
+
+:root[data-palette="classic"][data-theme="dark"] {
+  --bg: #0b0e14;
+  --surface: #131823;
+  --surface-muted: #1b2230;
+  --text: #e8ecf3;
+  --muted: #94a0b4;
+  --border: #232b3a;
+  --border-strong: #334055;
+  --accent: #8b8cf8;
+  --accent-hover: #a5a6fb;
+  --accent-soft: #1e1f3d;
+  --on-accent: #0b0e14;
+  --success: #6ee7a0;
+  --success-soft: #0f2a1c;
+  --success-border: #1f5136;
+  --error: #ff8a80;
+  --warning: #fbbf24;
+  --warning-border: #6b4f12;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --gold: #fbbf24;
+  --gold-soft: #3a2a07;
+  --danger: #fb7185;
+  --glow: 0 0 0 1px rgba(139, 92, 246, 0.35), 0 12px 40px rgba(139, 92, 246, 0.25);
+  --halo-main: rgba(139, 92, 246, 0.28);
+  --halo-light: rgba(34, 211, 238, 0.2);
 }
 
 [hidden] {
@@ -80,7 +210,7 @@
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 15% -10%, var(--halo-teal), transparent 40%),
+    radial-gradient(circle at 15% -10%, var(--halo-main), transparent 40%),
     radial-gradient(circle at 90% 0%, var(--halo-light), transparent 35%),
     var(--bg);
   background-attachment: fixed;
@@ -197,7 +327,7 @@ select {
 
 .chip-level {
   background: var(--game-gradient);
-  color: var(--chiffon);
+  color: var(--brand-light);
 }
 
 /* Layout */
@@ -447,7 +577,7 @@ h2,
   border-radius: 11px;
   position: relative;
   overflow: hidden;
-  color: var(--chiffon);
+  color: var(--brand-light);
   font-weight: 700;
   font-size: 1.1rem;
 }
@@ -686,9 +816,9 @@ h2,
   height: 64px;
   border-radius: 18px;
   background: var(--game-gradient);
-  color: var(--chiffon);
+  color: var(--brand-light);
   line-height: 1;
-  box-shadow: 0 8px 24px rgba(61, 141, 122, 0.4);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--brand) 40%, transparent);
 }
 
 .level-label {
@@ -727,7 +857,7 @@ h2,
   height: 100%;
   border-radius: inherit;
   background: var(--game-gradient);
-  box-shadow: 0 0 12px rgba(143, 203, 185, 0.6);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--brand-glow) 60%, transparent);
   transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -739,7 +869,7 @@ h2,
 
 .player-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin-top: 16px;
 }
@@ -766,6 +896,7 @@ h2,
 }
 
 .stat-button {
+  position: relative;
   cursor: pointer;
   transition: border-color 0.15s ease, transform 0.15s ease;
 }
@@ -881,8 +1012,8 @@ h2,
 
 .mode-tab[aria-selected="true"] {
   background: var(--game-gradient);
-  color: var(--chiffon);
-  box-shadow: 0 4px 14px rgba(61, 141, 122, 0.35);
+  color: var(--brand-light);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--brand) 35%, transparent);
 }
 
 /* Card deck */
@@ -1169,7 +1300,7 @@ kbd {
 }
 
 .toast-xp {
-  border-color: rgba(61, 141, 122, 0.6);
+  border-color: color-mix(in srgb, var(--brand) 60%, transparent);
 }
 
 .toast-quest {
@@ -1181,7 +1312,7 @@ kbd {
 .toast-level {
   border: 0;
   background: var(--game-gradient);
-  color: var(--chiffon);
+  color: var(--brand-light);
   font-size: 1.05rem;
 }
 
@@ -1225,7 +1356,7 @@ kbd {
 }
 
 .trophy-dialog::backdrop {
-  background: rgba(15, 38, 32, 0.6);
+  background: var(--backdrop);
   backdrop-filter: blur(4px);
 }
 
@@ -1295,6 +1426,212 @@ kbd {
   color: var(--gold);
 }
 
+/* Coins, shop, and loot chests */
+
+.equipped-title {
+  margin: -6px 0 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.chest-badge {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--game-gradient);
+  color: var(--brand-light);
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: var(--glow);
+  animation: chest-badge-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes chest-badge-pulse {
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+.shop-dialog .dialog-header {
+  gap: 12px;
+}
+
+.shop-dialog .dialog-header h2 {
+  flex: 1;
+}
+
+.shop-balance {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--gold-soft);
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.shop-section {
+  margin-bottom: 18px;
+}
+
+.shop-section-title {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.chest-stage {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--surface-muted);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.chest-stage.has-chest {
+  background: var(--accent-soft);
+  box-shadow: var(--glow);
+}
+
+.chest-icon {
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+.chest-stage.has-chest .chest-icon {
+  animation: chest-wiggle 1.4s ease-in-out infinite;
+}
+
+.chest-stage.opening .chest-icon {
+  animation: chest-shake 0.6s ease-in-out;
+}
+
+.chest-stage.revealed .chest-icon {
+  animation: chest-pop 0.4s ease-out;
+}
+
+@keyframes chest-wiggle {
+  0%,
+  70%,
+  100% {
+    transform: rotate(0);
+  }
+  80% {
+    transform: rotate(-10deg);
+  }
+  90% {
+    transform: rotate(10deg);
+  }
+}
+
+@keyframes chest-shake {
+  20%,
+  60% {
+    transform: translateX(-6px) rotate(-8deg);
+  }
+  40%,
+  80% {
+    transform: translateX(6px) rotate(8deg);
+  }
+}
+
+@keyframes chest-pop {
+  from {
+    transform: scale(0.4);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.chest-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.chest-text {
+  margin: 0;
+  font-weight: 600;
+}
+
+.chest-prize {
+  margin: 4px 0 0;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.shop-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.shop-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--surface-muted);
+}
+
+.shop-item.equipped {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.shop-item-icon {
+  font-size: 1.5rem;
+  width: 32px;
+  text-align: center;
+}
+
+.theme-swatch {
+  display: flex;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.theme-swatch span {
+  flex: 1;
+}
+
+.shop-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.shop-item-name {
+  margin: 0;
+  font-weight: 700;
+}
+
+.shop-item-detail {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.shop-item .button {
+  min-width: 96px;
+}
+
+.shop-earn-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 /* Loading and welcome screen */
 
 body.splash-open {
@@ -1310,7 +1647,7 @@ body.splash-open {
   overflow-y: auto;
   padding: 24px 16px;
   background:
-    radial-gradient(circle at 20% 10%, var(--halo-teal), transparent 45%),
+    radial-gradient(circle at 20% 10%, var(--halo-main), transparent 45%),
     radial-gradient(circle at 85% 90%, var(--halo-light), transparent 45%),
     var(--bg);
   animation: splash-in 0.3s ease;
@@ -1362,7 +1699,7 @@ body.splash-open {
   place-items: center;
   border-radius: 16px;
   background: var(--game-gradient);
-  box-shadow: 0 10px 30px rgba(61, 141, 122, 0.4);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--brand) 40%, transparent);
   font-size: 2.6rem;
   animation: card-fan 1.8s ease-in-out infinite;
 }
@@ -1380,7 +1717,7 @@ body.splash-open {
 .splash-card-front {
   --fan: 0deg;
   /* Solid Teal Green like the logo, in both themes. */
-  background: var(--teal);
+  background: var(--brand);
   animation-name: card-bounce;
 }
 
@@ -1623,7 +1960,7 @@ body.splash-open {
   padding: 0;
   border: 0;
   background: var(--game-gradient);
-  color: var(--chiffon);
+  color: var(--brand-light);
 }
 
 .account-dialog {

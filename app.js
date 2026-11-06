@@ -11,11 +11,33 @@ import {
 import { burstConfetti, showToast } from "./celebrate.js";
 import { renderDeck, swipeTopCard } from "./deck.js";
 import { FIELDS, fieldById, fieldIdOf } from "./fields.js";
-import { ACHIEVEMENTS, FRESH_POSTING_DAYS, XP_PER_SAVE, applicationXp, computeProgress } from "./game.js";
+import {
+  ACHIEVEMENTS,
+  FRESH_POSTING_DAYS,
+  XP_PER_SAVE,
+  applicationXp,
+  computeProgress,
+  previousDayKey,
+} from "./game.js";
 import { METRO_AREAS, STATE_NAMES, isRemoteUs, metroIdOf, stateCodeOf } from "./locations.js";
 import { guessCompanyDomain, logoUrl } from "./logos.js";
 import { ROLES, roleIdsOf } from "./roles.js";
-import { setUpThemeToggle } from "./theme.js";
+import {
+  COINS,
+  MAX_STREAK_FREEZES,
+  STREAK_FREEZE,
+  THEMES,
+  TITLES,
+  applicationCoins,
+  buyItem,
+  daysToFreeze,
+  describePrize,
+  openChest,
+  purchaseBlocker,
+  titleName,
+  walletState,
+} from "./shop.js";
+import { applyPalette, setUpThemeToggle } from "./theme.js";
 import {
   hideSplash,
   isSplashOpen,
@@ -70,6 +92,7 @@ const listMessage = document.getElementById("list-message");
 const postingList = document.getElementById("posting-list");
 const showMoreButton = document.getElementById("show-more-button");
 const trophyDialog = document.getElementById("trophy-dialog");
+const shopDialog = document.getElementById("shop-dialog");
 const accountButton = document.getElementById("account-button");
 const accountDialog = document.getElementById("account-dialog");
 const syncStatus = document.getElementById("sync-status");
@@ -281,12 +304,12 @@ function markApplied(posting) {
     metroIds: [...posting.metroIds],
   };
   appliedPostings[posting.id] = application;
-  showToast(`✓ Applied to ${posting.company_name}  +${applicationXp(application)} XP`, "xp");
+  showToast(`✓ Applied to ${posting.company_name}  +${applicationXp(application)} XP · +${applicationCoins(application)} 🪙`, "xp");
 }
 
 function markSaved(posting) {
   savedPostings[posting.id] = new Date().toISOString();
-  showToast(`★ Saved ${posting.company_name}  +${XP_PER_SAVE} XP`, "xp");
+  showToast(`★ Saved ${posting.company_name}  +${XP_PER_SAVE} XP · +${COINS.perSave} 🪙`, "xp");
 }
 
 function afterActivityChange() {
@@ -395,8 +418,172 @@ function renderHud() {
     xpText.textContent = `Max level! ${progress.xp} XP total`;
   }
 
+  const wallet = walletState(progress, activity.wallet);
+  document.getElementById("coin-count").textContent = String(Math.max(0, wallet.coins));
+  const chestBadge = document.getElementById("chest-badge");
+  chestBadge.hidden = wallet.chestsAvailable === 0;
+  chestBadge.textContent = `🎁 ${wallet.chestsAvailable}`;
+  const equippedTitle = document.getElementById("equipped-title");
+  equippedTitle.textContent = activity.wallet.title ? `“${titleName(activity.wallet.title)}”` : "";
+  equippedTitle.hidden = !activity.wallet.title;
+  applyPalette(activity.wallet.theme);
+
   renderQuests(progress.quests);
   renderTrophies(progress.achievements);
+  renderShop();
+}
+
+// ---------- Shop and loot chests ----------
+
+// The last chest's prize stays on screen until the shop closes.
+let chestRevealText = null;
+
+function createShopItem({ icon, name, detail, equipped }, actionButton) {
+  const item = createElement("li", `shop-item${equipped ? " equipped" : ""}`);
+  const info = createElement("div", "shop-item-info");
+  info.append(createElement("p", "shop-item-name", name), createElement("p", "shop-item-detail", detail));
+  item.append(icon, info, actionButton);
+  return item;
+}
+
+function createShopButton(text, onClick, { disabled = false, primary = false } = {}) {
+  const button = createElement("button", `button ${primary ? "applied-button" : "button-secondary"}`, text);
+  button.type = "button";
+  button.disabled = disabled;
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+// A button that buys the item, or says why it can't be bought yet.
+function createBuyButton(item, wallet) {
+  const blocker = purchaseBlocker(item, wallet);
+  return createShopButton(blocker ?? `Buy · ${item.cost} 🪙`, () => handleBuy(item), { disabled: Boolean(blocker), primary: !blocker });
+}
+
+function renderChestStage(wallet) {
+  const stage = document.getElementById("chest-stage");
+  const openButton = document.getElementById("open-chest-button");
+  const prizeText = document.getElementById("chest-prize");
+  if (stage.classList.contains("opening")) return;
+  stage.classList.toggle("has-chest", wallet.chestsAvailable > 0);
+  document.getElementById("chest-text").textContent =
+    wallet.chestsAvailable > 0
+      ? `You have ${wallet.chestsAvailable} chest${wallet.chestsAvailable === 1 ? "" : "s"} to open!`
+      : `Next chest in ${wallet.applicationsToNextChest} application${wallet.applicationsToNextChest === 1 ? "" : "s"}, or finish all 3 daily quests.`;
+  openButton.disabled = wallet.chestsAvailable === 0;
+  prizeText.hidden = !chestRevealText;
+  prizeText.textContent = chestRevealText ?? "";
+}
+
+function renderShop() {
+  const wallet = walletState(progress, activity.wallet);
+  document.getElementById("shop-coins").textContent = String(Math.max(0, wallet.coins));
+  renderChestStage(wallet);
+
+  document.getElementById("freeze-list").replaceChildren(
+    createShopItem(
+      {
+        icon: createElement("span", "shop-item-icon", STREAK_FREEZE.icon),
+        name: STREAK_FREEZE.name,
+        detail: `${STREAK_FREEZE.description} You have ${wallet.freezes} of ${MAX_STREAK_FREEZES}.`,
+      },
+      createBuyButton(STREAK_FREEZE, wallet),
+    ),
+  );
+
+  document.getElementById("theme-list").replaceChildren(
+    ...THEMES.map((theme) => {
+      const swatch = createElement("span", "theme-swatch");
+      swatch.setAttribute("aria-hidden", "true");
+      for (const color of theme.swatch) {
+        const half = createElement("span");
+        half.style.background = color;
+        swatch.append(half);
+      }
+      const equipped = activity.wallet.theme === theme.id;
+      const owned = wallet.ownedIds.has(theme.id);
+      const button = owned
+        ? createShopButton(equipped ? "Equipped" : "Use", () => equipTheme(theme.id), { disabled: equipped })
+        : createBuyButton(theme, wallet);
+      const detail = theme.cost === 0 ? "Free · the default" : owned ? "Owned" : `${theme.cost} coins`;
+      return createShopItem({ icon: swatch, name: theme.name, detail, equipped }, button);
+    }),
+  );
+
+  document.getElementById("title-list").replaceChildren(
+    ...TITLES.map((title) => {
+      const equipped = activity.wallet.title === title.id;
+      const owned = wallet.ownedIds.has(title.id);
+      let button;
+      if (owned) {
+        button = createShopButton(equipped ? "Take off" : "Wear", () => equipTitle(equipped ? null : title.id));
+      } else if (title.cost) {
+        button = createBuyButton(title, wallet);
+      } else {
+        button = createShopButton("Chest only", () => {}, { disabled: true });
+      }
+      const detail = owned ? (equipped ? "Shown under your level" : "Owned") : title.cost ? `${title.cost} coins` : "Found only in loot chests";
+      return createShopItem({ icon: createElement("span", "shop-item-icon", "🏷️"), name: title.name, detail, equipped }, button);
+    }),
+  );
+}
+
+function afterWalletChange() {
+  saveActivity();
+  updateGame({ celebrate: false });
+}
+
+function handleBuy(item) {
+  if (!buyItem(item.id, progress, activity.wallet)) return;
+  // New looks are put on right away, so buying one shows what it does.
+  if (THEMES.some((theme) => theme.id === item.id)) activity.wallet.theme = item.id;
+  if (TITLES.some((title) => title.id === item.id)) activity.wallet.title = item.id;
+  showToast(`🛒 Bought ${item.name}  −${item.cost} 🪙`, "info");
+  afterWalletChange();
+}
+
+function equipTheme(themeId) {
+  activity.wallet.theme = themeId;
+  afterWalletChange();
+}
+
+function equipTitle(titleId) {
+  activity.wallet.title = titleId;
+  afterWalletChange();
+}
+
+const CHEST_OPENING_MS = 650;
+
+function handleOpenChest() {
+  const stage = document.getElementById("chest-stage");
+  const openButton = document.getElementById("open-chest-button");
+  if (stage.classList.contains("opening")) return;
+  openButton.disabled = true;
+  stage.classList.remove("revealed");
+  stage.classList.add("opening");
+  chestRevealText = null;
+  document.getElementById("chest-prize").hidden = true;
+  setTimeout(() => {
+    stage.classList.remove("opening");
+    const prize = openChest(progress, activity.wallet);
+    if (!prize) {
+      renderShop();
+      return;
+    }
+    const { icon, text } = describePrize(prize);
+    chestRevealText = `${icon} You got: ${text}!`;
+    stage.classList.add("revealed");
+    burstConfetti();
+    showToast(`🎁 Chest opened: ${text}!`, "trophy");
+    afterWalletChange();
+  }, CHEST_OPENING_MS);
+}
+
+function openShop() {
+  chestRevealText = null;
+  document.getElementById("chest-stage").classList.remove("revealed");
+  renderShop();
+  shopDialog.showModal();
 }
 
 // Celebrates anything new since the last update: finished quests, trophies, and level-ups.
@@ -404,28 +591,52 @@ function celebrateChanges(previous, current, seenAchievementIds, previousLevel) 
   let isBigMoment = false;
   current.quests.forEach((quest, index) => {
     if (quest.done && !previous.quests[index].done) {
-      showToast(`${quest.icon} Quest complete: ${quest.name}  +${quest.xp} XP`, "quest");
+      showToast(`${quest.icon} Quest complete: ${quest.name}  +${quest.xp} XP · +${COINS.perQuest} 🪙`, "quest");
     }
   });
   for (const achievement of current.achievements) {
     if (achievement.unlocked && !seenAchievementIds.has(achievement.id)) {
-      showToast(`${achievement.icon} Trophy unlocked: ${achievement.name}  +${achievement.xp} XP`, "trophy");
+      showToast(`${achievement.icon} Trophy unlocked: ${achievement.name}  +${achievement.xp} XP · +${COINS.perTrophy} 🪙`, "trophy");
       isBigMoment = true;
     }
   }
   if (current.level > previousLevel) {
-    showToast(`⬆️ Level ${current.level} reached: ${current.title}!`, "level");
+    showToast(`⬆️ Level ${current.level} reached: ${current.title}!  +${COINS.perLevelUp} 🪙`, "level");
     isBigMoment = true;
   }
   if (isBigMoment) burstConfetti();
 }
 
+function computeCurrentProgress() {
+  return computeProgress(Object.values(appliedPostings), Object.values(savedPostings), {
+    frozenDays: activity.wallet.freezesUsed,
+  });
+}
+
+// Spends streak freezes on missed days, if that keeps the player's streak going.
+function useStreakFreezesIfNeeded() {
+  const { freezes } = walletState(progress, activity.wallet);
+  const missedDays = daysToFreeze(progress.streakDays, progress.todayKey, freezes, previousDayKey);
+  if (missedDays.length === 0) return;
+  activity.wallet.freezesUsed.push(...missedDays);
+  progress = computeCurrentProgress();
+  const dayWord = missedDays.length === 1 ? "a missed day" : `${missedDays.length} missed days`;
+  showToast(`${STREAK_FREEZE.icon} A streak freeze covered ${dayWord}. Your ${progress.currentStreak}-day streak is safe!`, "info");
+  saveActivity();
+}
+
 function updateGame({ celebrate }) {
   const previous = progress;
-  progress = computeProgress(Object.values(appliedPostings), Object.values(savedPostings));
+  const previousChests = previous ? walletState(previous, activity.wallet).chestsAvailable : null;
+  progress = computeCurrentProgress();
+  useStreakFreezesIfNeeded();
   const seenAchievementIds = new Set(activity.seen.seenAchievementIds);
   if (celebrate && previous) {
     celebrateChanges(previous, progress, seenAchievementIds, activity.seen.level);
+    if (walletState(progress, activity.wallet).chestsAvailable > previousChests) {
+      showToast("🎁 Loot chest earned! Open it in the shop.", "trophy");
+      burstConfetti();
+    }
   }
   for (const achievement of progress.achievements) {
     if (achievement.unlocked) seenAchievementIds.add(achievement.id);
@@ -830,7 +1041,8 @@ const ARROW_DIRECTIONS = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up"
 
 function handleKeyDown(event) {
   const direction = ARROW_DIRECTIONS[event.key];
-  if (!direction || viewMode !== "discover" || trophyDialog.open || accountDialog.open || isSplashOpen()) return;
+  const dialogOpen = trophyDialog.open || shopDialog.open || accountDialog.open;
+  if (!direction || viewMode !== "discover" || dialogOpen || isSplashOpen()) return;
   if (event.target.closest("input, select, textarea")) return;
   event.preventDefault();
   swipeTopCard(direction);
@@ -863,6 +1075,12 @@ showMoreButton.addEventListener("click", () => {
   render();
 });
 document.getElementById("trophies-button").addEventListener("click", () => trophyDialog.showModal());
+document.getElementById("shop-button").addEventListener("click", openShop);
+document.getElementById("shop-close").addEventListener("click", () => shopDialog.close());
+document.getElementById("open-chest-button").addEventListener("click", handleOpenChest);
+shopDialog.addEventListener("click", (event) => {
+  if (event.target === shopDialog) shopDialog.close();
+});
 document.getElementById("trophy-close").addEventListener("click", () => trophyDialog.close());
 trophyDialog.addEventListener("click", (event) => {
   if (event.target === trophyDialog) trophyDialog.close();

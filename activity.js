@@ -2,12 +2,14 @@
 // level they've already celebrated. Guests keep it in this browser; logged-in
 // players keep it in their account, so it follows them to every device.
 import { loadCloudProgress, saveCloudProgress } from "./account.js";
+import { emptyWallet } from "./shop.js";
 
 const GUEST_STORAGE_KEYS = {
   applied: "appliedPostings",
   saved: "savedPostings",
   passed: "passedPostings",
   seen: "gameProgress",
+  wallet: "wallet",
 };
 // Waits for a pause in swiping so a burst of swipes becomes one save.
 const CLOUD_SAVE_DELAY_MS = 800;
@@ -19,7 +21,8 @@ function emptySeen() {
 
 // Each store maps posting id -> what happened. Applications are { at, fresh, roleIds, metroIds };
 // saves and passes are ISO dates. The store objects are never replaced, only refilled.
-export const activity = { applied: {}, saved: {}, passed: {}, seen: emptySeen() };
+// The wallet holds purchases, opened chests, used streak freezes, and equipped items (see shop.js).
+export const activity = { applied: {}, saved: {}, passed: {}, seen: emptySeen(), wallet: emptyWallet() };
 
 let userId = null;
 let cloudSaveTimer = null;
@@ -69,6 +72,7 @@ function replaceActivity(source) {
     Object.assign(store, part === "applied" ? normalizeApplications(source.applied) : source[part] ?? {});
   }
   activity.seen = source.seen ?? emptySeen();
+  activity.wallet = { ...emptyWallet(), ...source.wallet };
 }
 
 // The account's progress wins wherever both have an entry for the same posting.
@@ -78,6 +82,15 @@ function mergeActivity(account, guest) {
   merged.seen = {
     level: Math.max(account.seen?.level ?? 1, guest.seen?.level ?? 1),
     seenAchievementIds: [...new Set([...(account.seen?.seenAchievementIds ?? []), ...(guest.seen?.seenAchievementIds ?? [])])],
+  };
+  // Both sides' purchases and opened chests are kept; the account's equipped items win.
+  const accountWallet = { ...emptyWallet(), ...account.wallet };
+  const guestWallet = { ...emptyWallet(), ...guest.wallet };
+  merged.wallet = {
+    ...accountWallet,
+    purchases: [...accountWallet.purchases, ...guestWallet.purchases],
+    chests: [...accountWallet.chests, ...guestWallet.chests],
+    freezesUsed: [...new Set([...accountWallet.freezesUsed, ...guestWallet.freezesUsed])],
   };
   return merged;
 }
@@ -138,6 +151,7 @@ export async function flushCloudSave() {
       saved: activity.saved,
       passed: activity.passed,
       seen: activity.seen,
+      wallet: activity.wallet,
     });
     onSyncStatus("saved");
   } catch {

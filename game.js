@@ -68,7 +68,7 @@ export function dayKey(date) {
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
-function previousDayKey(key) {
+export function previousDayKey(key) {
   const [year, month, day] = key.split("-").map(Number);
   return dayKey(new Date(year, month - 1, day - 1));
 }
@@ -127,12 +127,14 @@ function levelFor(xp) {
  * Works out the player's whole game state.
  * @param applications list of { at, fresh, roleIds, metroIds } (one per applied posting)
  * @param savedDates ISO dates of every saved posting
+ * @param frozenDays "YYYY-MM-DD" days covered by a streak freeze, which count toward streaks
  */
-export function computeProgress(applications, savedDates, now = new Date()) {
+export function computeProgress(applications, savedDates, { now = new Date(), frozenDays = [] } = {}) {
   const days = groupByDay(applications, savedDates);
   const todayKey = dayKey(now);
-  const activeDays = new Set([...days].filter(([, day]) => day.applications.length > 0).map(([key]) => key));
-  const { currentStreak, bestStreak } = streaks(activeDays, todayKey);
+  const appliedDays = new Set([...days].filter(([, day]) => day.applications.length > 0).map(([key]) => key));
+  const streakDays = new Set([...appliedDays, ...frozenDays]);
+  const { currentStreak, bestStreak } = streaks(streakDays, todayKey);
 
   const stats = {
     applicationCount: applications.length,
@@ -147,10 +149,13 @@ export function computeProgress(applications, savedDates, now = new Date()) {
   const achievements = ACHIEVEMENTS.map((achievement) => ({ ...achievement, unlocked: achievement.earned(stats) }));
 
   let questXp = 0;
+  let questCompletions = 0;
+  let perfectQuestDays = 0;
   for (const day of days.values()) {
-    for (const quest of QUESTS) {
-      if (quest.progress(day) >= quest.target) questXp += quest.xp;
-    }
+    const doneQuests = QUESTS.filter((quest) => quest.progress(day) >= quest.target);
+    questXp += doneQuests.reduce((total, quest) => total + quest.xp, 0);
+    questCompletions += doneQuests.length;
+    if (doneQuests.length === QUESTS.length) perfectQuestDays += 1;
   }
   const today = days.get(todayKey) ?? { applications: [], saveCount: 0 };
   const quests = QUESTS.map((quest) => {
@@ -165,7 +170,22 @@ export function computeProgress(applications, savedDates, now = new Date()) {
     questXp +
     achievements.filter((achievement) => achievement.unlocked).reduce((total, achievement) => total + achievement.xp, 0);
 
-  return { xp, ...levelFor(xp), currentStreak, bestStreak, applicationCount: stats.applicationCount, quests, achievements };
+  return {
+    xp,
+    ...levelFor(xp),
+    currentStreak,
+    bestStreak,
+    applicationCount: stats.applicationCount,
+    freshCount: stats.freshCount,
+    saveCount: stats.saveCount,
+    questCompletions,
+    perfectQuestDays,
+    trophyCount: achievements.filter((achievement) => achievement.unlocked).length,
+    streakDays,
+    todayKey,
+    quests,
+    achievements,
+  };
 }
 
 /** XP earned by one application, for the "+XP" pop-up. */

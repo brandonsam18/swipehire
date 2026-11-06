@@ -39,3 +39,20 @@ export function setUpThemeToggle(button) {
     if (!savedTheme()) applyTheme(event.matches ? "dark" : "light", button);
   });
 }
+
+const PALETTE_STORAGE_KEY = "palette";
+const DEFAULT_PALETTE = "teal";
+
+/** Shows a shop theme's colors (see [data-palette] in styles.css) and remembers it for the next visit. */
+export function applyPalette(paletteId) {
+  if (paletteId && paletteId !== DEFAULT_PALETTE) {
+    document.documentElement.dataset.palette = paletteId;
+  } else {
+    delete document.documentElement.dataset.palette;
+  }
+  try {
+    localStorage.setItem(PALETTE_STORAGE_KEY, paletteId || DEFAULT_PALETTE);
+  } catch {
+    // The theme still shows; it just won't be ready before the page loads next time.
+  }
+}
