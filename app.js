@@ -27,6 +27,7 @@ import { playCelebration } from "./celebrations.js";
 import { COINS, STREAK_FREEZE, applicationCoins, daysToFreeze, titleName, walletState } from "./shop.js";
 import { openShop, renderShop, setUpShop } from "./shop-view.js";
 import { applyPalette, setUpThemeToggle } from "./theme.js";
+import { isTourOpen, startTour } from "./tour.js";
 import {
   hideSplash,
   isSplashOpen,
@@ -46,7 +47,10 @@ const STORAGE_KEYS = {
   viewMode: "viewMode",
   playingAsGuest: "playingAsGuest",
   closedNoticesShown: "closedNoticesShown",
+  tourSeen: "tourSeen",
 };
+// Lets the welcome screen fade out before the tour begins.
+const TOUR_START_DELAY_MS = 450;
 // How many closed postings to name in the pop-up before saying "and N more".
 const CLOSED_NOTICE_NAMES = 2;
 // Rolling internships often fill after this many weeks, so older open postings get an "apply soon" hint.
@@ -488,7 +492,7 @@ function updateGame({ celebrate }) {
   for (const achievement of progress.achievements) {
     if (achievement.unlocked) seenAchievementIds.add(achievement.id);
   }
-  activity.seen = { level: progress.level, seenAchievementIds: [...seenAchievementIds] };
+  activity.seen = { ...activity.seen, level: progress.level, seenAchievementIds: [...seenAchievementIds] };
   renderHud();
 }
 
@@ -780,6 +784,7 @@ function finishStartup() {
   announceClosedSavedPostings();
   if (currentUser || loadJson(STORAGE_KEYS.playingAsGuest, false)) {
     hideSplash();
+    startTourIfNew();
   } else {
     showWelcomeScreen({ closable: false });
   }
@@ -836,6 +841,7 @@ async function handleUserChanged(user) {
     if (user && isSplashOpen()) {
       hideSplash();
       showToast(`👋 Welcome, ${user.displayName || user.email}!`, "info");
+      startTourIfNew();
     }
   }
   userKnown = true;
@@ -868,6 +874,33 @@ async function handleLogOut() {
 function playAsGuest() {
   saveJson(STORAGE_KEYS.playingAsGuest, true);
   hideSplash();
+  startTourIfNew();
+}
+
+// ---------- First-time tour ----------
+
+// Seen in this browser, or (for accounts) on any device.
+function hasSeenTour() {
+  return loadJson(STORAGE_KEYS.tourSeen, false) || Boolean(activity.seen.tourDone);
+}
+
+function rememberTourSeen() {
+  saveJson(STORAGE_KEYS.tourSeen, true);
+  if (!activity.seen.tourDone) {
+    activity.seen = { ...activity.seen, tourDone: true };
+    saveActivity();
+  }
+}
+
+function runTour() {
+  if (isTourOpen() || isSplashOpen()) return;
+  // The tour starts at the swipe deck, which only shows in Discover.
+  if (viewMode !== "discover") setViewMode("discover");
+  startTour({ closed: rememberTourSeen });
+}
+
+function startTourIfNew() {
+  if (!hasSeenTour()) setTimeout(runTour, TOUR_START_DELAY_MS);
 }
 
 function selectStatusTab(selectedTab) {
@@ -888,7 +921,7 @@ const ARROW_DIRECTIONS = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up"
 
 function handleKeyDown(event) {
   const direction = ARROW_DIRECTIONS[event.key];
-  const dialogOpen = trophyDialog.open || shopDialog.open || accountDialog.open;
+  const dialogOpen = trophyDialog.open || shopDialog.open || accountDialog.open || isTourOpen();
   if (!direction || viewMode !== "discover" || dialogOpen || isSplashOpen()) return;
   if (event.target.closest("input, select, textarea")) return;
   event.preventDefault();
@@ -923,6 +956,7 @@ showMoreButton.addEventListener("click", () => {
 });
 document.getElementById("trophies-button").addEventListener("click", () => trophyDialog.showModal());
 document.getElementById("shop-button").addEventListener("click", () => openShop());
+document.getElementById("tour-button").addEventListener("click", runTour);
 setUpShop({ progressSource: () => progress, walletChanged: afterWalletChange });
 document.getElementById("trophy-close").addEventListener("click", () => trophyDialog.close());
 trophyDialog.addEventListener("click", (event) => {

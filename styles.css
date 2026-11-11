@@ -1644,6 +1644,100 @@ kbd {
   color: var(--muted);
 }
 
+/* First-time tour */
+
+.tour-button {
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Extra room at the bottom while the tour is open, so even the swipe deck near the
+   end of the page can scroll up under the top bar with space for the step card. */
+body.tour-open {
+  padding-bottom: 60vh;
+}
+
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  animation: tour-in 0.25s ease;
+}
+
+@keyframes tour-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The page is dimmed by the spotlight's giant shadow, leaving the step's area bright. */
+.tour-spotlight {
+  position: fixed;
+  border-radius: 18px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62), 0 0 0 3px var(--accent), 0 0 24px var(--accent);
+  pointer-events: none;
+  transition: left 0.3s ease, top 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+
+.tour-card {
+  position: fixed;
+  width: min(360px, calc(100vw - 32px));
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  box-shadow: var(--glow), var(--shadow-md);
+  transition: left 0.3s ease, top 0.3s ease;
+}
+
+.tour-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.tour-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+
+.tour-skip {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.tour-skip:hover {
+  background: var(--surface-muted);
+}
+
+.tour-title {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+}
+
+.tour-text {
+  margin: 0 0 16px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.tour-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 /* Item shop and locker */
 
 .shop-dialog {

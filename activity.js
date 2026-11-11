@@ -82,6 +82,7 @@ function mergeActivity(account, guest) {
   merged.seen = {
     level: Math.max(account.seen?.level ?? 1, guest.seen?.level ?? 1),
     seenAchievementIds: [...new Set([...(account.seen?.seenAchievementIds ?? []), ...(guest.seen?.seenAchievementIds ?? [])])],
+    tourDone: Boolean(account.seen?.tourDone || guest.seen?.tourDone),
   };
   // Both sides' purchases and opened chests are kept; the account's equipped items win.
   const accountWallet = { ...emptyWallet(), ...account.wallet };
