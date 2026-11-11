@@ -2,6 +2,7 @@
 // level they've already celebrated. Guests keep it in this browser; logged-in
 // players keep it in their account, so it follows them to every device.
 import { loadCloudProgress, saveCloudProgress } from "./account.js";
+import { emptyAnswers, mergeAnswers } from "./answers.js";
 import { emptyWallet } from "./shop.js";
 
 const GUEST_STORAGE_KEYS = {
@@ -10,6 +11,7 @@ const GUEST_STORAGE_KEYS = {
   passed: "passedPostings",
   seen: "gameProgress",
   wallet: "wallet",
+  answers: "savedAnswers",
 };
 // Waits for a pause in swiping so a burst of swipes becomes one save.
 const CLOUD_SAVE_DELAY_MS = 800;
@@ -22,7 +24,15 @@ function emptySeen() {
 // Each store maps posting id -> what happened. Applications are { at, fresh, roleIds, metroIds };
 // saves and passes are ISO dates. The store objects are never replaced, only refilled.
 // The wallet holds purchases, opened chests, used streak freezes, and equipped items (see shop.js).
-export const activity = { applied: {}, saved: {}, passed: {}, seen: emptySeen(), wallet: emptyWallet() };
+// Answers are the application helper's saved basics and question-and-answer pairs (see answers.js).
+export const activity = {
+  applied: {},
+  saved: {},
+  passed: {},
+  seen: emptySeen(),
+  wallet: emptyWallet(),
+  answers: emptyAnswers(),
+};
 
 let userId = null;
 let cloudSaveTimer = null;
@@ -73,6 +83,7 @@ function replaceActivity(source) {
   }
   activity.seen = source.seen ?? emptySeen();
   activity.wallet = { ...emptyWallet(), ...source.wallet };
+  activity.answers = source.answers ?? emptyAnswers();
 }
 
 // The account's progress wins wherever both have an entry for the same posting.
@@ -93,6 +104,7 @@ function mergeActivity(account, guest) {
     chests: [...accountWallet.chests, ...guestWallet.chests],
     freezesUsed: [...new Set([...accountWallet.freezesUsed, ...guestWallet.freezesUsed])],
   };
+  merged.answers = account.answers ? mergeAnswers(account.answers, guest.answers) : guest.answers;
   return merged;
 }
 
@@ -153,6 +165,7 @@ export async function flushCloudSave() {
       passed: activity.passed,
       seen: activity.seen,
       wallet: activity.wallet,
+      answers: activity.answers,
     });
     onSyncStatus("saved");
   } catch {

@@ -8,6 +8,7 @@ import {
   useAccount,
   useGuest,
 } from "./activity.js";
+import { openAnswers, refreshAnswers, setUpAnswers } from "./answers-view.js";
 import { burstConfetti, showToast } from "./celebrate.js";
 import { setTextWithCoins } from "./coin-icon.js";
 import { renderDeck, swipeTopCard } from "./deck.js";
@@ -90,6 +91,7 @@ const postingList = document.getElementById("posting-list");
 const showMoreButton = document.getElementById("show-more-button");
 const trophyDialog = document.getElementById("trophy-dialog");
 const shopDialog = document.getElementById("shop-dialog");
+const answersDialog = document.getElementById("answers-dialog");
 const playerBanner = document.getElementById("player-banner");
 const accountButton = document.getElementById("account-button");
 const accountDialog = document.getElementById("account-dialog");
@@ -515,7 +517,7 @@ function buildDeckCardContent(posting) {
   header.append(createAvatar(posting), company);
 
   const footer = createElement("div", "deck-card-footer");
-  footer.append(createApplyLink(posting, "button button-secondary"));
+  footer.append(createApplyLink(posting, "button button-secondary"), createAnswersButton(posting));
 
   content.append(header, createElement("h2", "deck-card-title", posting.title), createTags(posting), footer);
   return content;
@@ -579,12 +581,22 @@ function createPostingItem(posting) {
   const applyControl = isClosed
     ? createElement("span", "button button-secondary closed-label", "Posting closed")
     : createApplyLink(posting, "button button-secondary");
-  buttons.append(applyControl, saveButton, appliedButton);
+  buttons.append(applyControl, createAnswersButton(posting), saveButton, appliedButton);
   const actions = createElement("div", "posting-actions");
   actions.append(createElement("span", "posted", formatPostedAge(posting)), buttons);
 
   item.append(createAvatar(posting), info, actions);
   return item;
+}
+
+// Opens the Answers panel with {company} and {role} filled in for this posting.
+function createAnswersButton(posting) {
+  const button = createElement("button", "button button-secondary answers-button", "📋");
+  button.type = "button";
+  button.title = "Your saved answers for this application";
+  button.setAttribute("aria-label", `Your saved answers, filled in for ${posting.company_name}`);
+  button.addEventListener("click", () => openAnswers(posting));
+  return button;
 }
 
 // The picker for where an application stands (Applied, OA, Interview, Offer, Rejected).
@@ -905,6 +917,7 @@ async function handleUserChanged(user) {
   undoStack.length = 0;
   progress = null;
   updateGame({ celebrate: false });
+  refreshAnswers();
   renderAccountButton();
   if (startupDone) {
     resetAndRender();
@@ -993,7 +1006,7 @@ const ARROW_DIRECTIONS = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up"
 
 function handleKeyDown(event) {
   const direction = ARROW_DIRECTIONS[event.key];
-  const dialogOpen = trophyDialog.open || shopDialog.open || accountDialog.open || isTourOpen();
+  const dialogOpen = trophyDialog.open || shopDialog.open || answersDialog.open || accountDialog.open || isTourOpen();
   if (!direction || viewMode !== "discover" || dialogOpen || isSplashOpen()) return;
   if (event.target.closest("input, select, textarea")) return;
   event.preventDefault();
@@ -1029,6 +1042,8 @@ showMoreButton.addEventListener("click", () => {
 document.getElementById("trophies-button").addEventListener("click", () => trophyDialog.showModal());
 document.getElementById("shop-button").addEventListener("click", () => openShop());
 document.getElementById("tour-button").addEventListener("click", runTour);
+document.getElementById("answers-button").addEventListener("click", () => openAnswers());
+setUpAnswers();
 setUpShop({ progressSource: () => progress, walletChanged: afterWalletChange });
 document.getElementById("trophy-close").addEventListener("click", () => trophyDialog.close());
 trophyDialog.addEventListener("click", (event) => {

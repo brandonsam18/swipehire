@@ -1644,6 +1644,118 @@ kbd {
   color: var(--muted);
 }
 
+/* Answers panel (application helper) */
+
+.answers-dialog {
+  width: min(680px, calc(100vw - 32px));
+}
+
+.answers-context {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.answers-warning {
+  margin: 0 0 16px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.answer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.answer-row {
+  display: grid;
+  gap: 4px;
+}
+
+.answer-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.answer-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.answer-input,
+.answer-question,
+.answer-text {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.answer-input:focus,
+.answer-question:focus,
+.answer-text:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.answer-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--surface-muted);
+}
+
+.answer-question {
+  font-weight: 700;
+}
+
+.answer-text {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.answer-preview {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+
+.answer-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.copy-button {
+  flex-shrink: 0;
+  min-width: 84px;
+}
+
+.copy-button.copied {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.add-answer {
+  margin-top: 10px;
+}
+
+.answers-button {
+  min-width: 40px;
+}
+
 /* Application stages */
 
 .pipeline {

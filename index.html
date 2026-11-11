@@ -119,6 +119,7 @@
           <span class="brand-name">SwipeHire</span>
         </div>
         <div class="topbar-chips">
+          <button id="answers-button" class="theme-toggle" type="button" aria-label="Your saved answers" title="Your saved answers">📋</button>
           <button id="tour-button" class="theme-toggle tour-button" type="button" aria-label="Replay the tour" title="Replay the tour">?</button>
           <button id="theme-toggle" class="theme-toggle" type="button"></button>
           <button id="account-button" class="account-button" type="button">Log in</button>
@@ -330,6 +331,26 @@
         <p class="shop-earn-hint">Equip anything you own. Skins change your swipe cards, celebrations play when you apply, and banners top your player card.</p>
         <div id="locker-slots"></div>
       </div>
+    </dialog>
+
+    <dialog id="answers-dialog" class="trophy-dialog answers-dialog" aria-labelledby="answers-heading">
+      <div class="dialog-header">
+        <h2 id="answers-heading">📋 Your answers</h2>
+        <button id="answers-close" class="icon-button" type="button" aria-label="Close answers">✕</button>
+      </div>
+      <p id="answers-context" class="answers-context"></p>
+      <p class="answers-warning">Saved to your account (only you can see them). Don't store passwords or ID numbers here.</p>
+
+      <section class="shop-section" aria-labelledby="profile-heading">
+        <h3 id="profile-heading" class="shop-section-title">The basics</h3>
+        <ul id="profile-fields" class="answer-list"></ul>
+      </section>
+
+      <section class="shop-section" aria-labelledby="custom-heading">
+        <h3 id="custom-heading" class="shop-section-title">Saved answers</h3>
+        <ul id="custom-answers" class="answer-list"></ul>
+        <button id="add-answer-button" class="button button-secondary add-answer" type="button">+ Add an answer</button>
+      </section>
     </dialog>
 
     <dialog id="account-dialog" class="trophy-dialog account-dialog" aria-labelledby="account-heading">
