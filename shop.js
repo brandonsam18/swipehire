@@ -38,7 +38,8 @@ export function coinsEarned(progress) {
     progress.saveCount * COINS.perSave +
     progress.questCompletions * COINS.perQuest +
     progress.trophyCount * COINS.perTrophy +
-    (progress.level - 1) * COINS.perLevelUp
+    (progress.level - 1) * COINS.perLevelUp +
+    (progress.stageCoins ?? 0)
   );
 }
 

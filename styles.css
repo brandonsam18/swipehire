@@ -1644,6 +1644,72 @@ kbd {
   color: var(--muted);
 }
 
+/* Application stages */
+
+.pipeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pipeline-chip {
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pipeline-chip:hover {
+  border-color: var(--accent);
+}
+
+.pipeline-chip[aria-pressed="true"] {
+  border-color: transparent;
+  background: var(--game-gradient);
+  color: var(--brand-light);
+  box-shadow: var(--glow);
+}
+
+.stage-picker {
+  display: inline-block;
+  margin-top: 8px;
+}
+
+.stage-select {
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Further along stands out more: assessments and interviews in the accent color, offers in gold. */
+.stage-select[data-stage="assessment"],
+.stage-select[data-stage="interview"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.stage-select[data-stage="offer"] {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.stage-select[data-stage="rejected"] {
+  color: var(--muted);
+}
+
 /* First-time tour */
 
 .tour-button {

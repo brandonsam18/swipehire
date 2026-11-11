@@ -15,10 +15,14 @@ import { FIELDS, fieldById, fieldIdOf } from "./fields.js";
 import {
   ACHIEVEMENTS,
   FRESH_POSTING_DAYS,
+  STAGES,
   XP_PER_SAVE,
   applicationXp,
   computeProgress,
+  currentStage,
   previousDayKey,
+  stageById,
+  withStage,
 } from "./game.js";
 import { METRO_AREAS, STATE_NAMES, isRemoteUs, metroIdOf, stateCodeOf } from "./locations.js";
 import { guessCompanyDomain, logoUrl } from "./logos.js";
@@ -121,6 +125,8 @@ let userKnown = false;
 let startupDone = false;
 let viewMode = loadJson(STORAGE_KEYS.viewMode, "discover") === "browse" ? "browse" : "discover";
 let statusFilter = "all";
+// In the Applied tab: "all", or one stage id to show only applications at that stage.
+let stageFilter = "all";
 let visibleCount = PAGE_SIZE;
 const undoStack = [];
 let progress = null;
@@ -184,7 +190,10 @@ function matchesFilters(posting) {
 }
 
 function matchesStatus(posting) {
-  if (statusFilter === "applied") return posting.id in appliedPostings;
+  if (statusFilter === "applied") {
+    const application = appliedPostings[posting.id];
+    return Boolean(application) && (stageFilter === "all" || currentStage(application) === stageFilter);
+  }
   if (statusFilter === "saved") return posting.id in savedPostings && !(posting.id in appliedPostings);
   return true;
 }
@@ -564,6 +573,8 @@ function createPostingItem(posting) {
   appliedButton.setAttribute("aria-pressed", String(Boolean(application)));
   appliedButton.addEventListener("click", () => toggleApplied(posting));
 
+  if (application) info.append(createStageSelect(posting, application));
+
   const buttons = createElement("div", "posting-buttons");
   const applyControl = isClosed
     ? createElement("span", "button button-secondary closed-label", "Posting closed")
@@ -574,6 +585,65 @@ function createPostingItem(posting) {
 
   item.append(createAvatar(posting), info, actions);
   return item;
+}
+
+// The picker for where an application stands (Applied, OA, Interview, Offer, Rejected).
+function createStageSelect(posting, application) {
+  const label = createElement("label", "stage-picker");
+  label.append(createElement("span", "visually-hidden", `Stage of your application to ${posting.company_name}`));
+  const select = createElement("select", "stage-select");
+  for (const stage of STAGES) select.append(new Option(`${stage.icon} ${stage.name}`, stage.id));
+  select.value = currentStage(application);
+  select.dataset.stage = select.value;
+  select.addEventListener("change", () => changeStage(posting, select.value));
+  label.append(select);
+  return label;
+}
+
+function changeStage(posting, stageId) {
+  const before = appliedPostings[posting.id];
+  const after = withStage(before, stageId);
+  appliedPostings[posting.id] = after;
+  const stage = stageById(stageId);
+  const newlyReached = !before.reached?.[stageId] && after.reached[stageId];
+  if (stageId === "rejected" && newlyReached) {
+    showToast(`${stage.icon} Rejected by ${posting.company_name}. Every no gets you closer to a yes.  +${stage.xp} XP`, "info");
+  } else if (newlyReached) {
+    showToast(`${stage.icon} ${stage.name} with ${posting.company_name}!  +${stage.xp} XP · +${stage.coins} 🪙`, "trophy");
+    if (stageId === "offer") {
+      burstConfetti();
+      playCelebration(activity.wallet.celebration);
+    }
+  } else {
+    showToast(`Moved ${posting.company_name} to ${stage.name}`, "info");
+  }
+  afterActivityChange();
+}
+
+// The Applied tab's strip of stages with counts; tapping one shows only those applications.
+function renderPipeline() {
+  const pipeline = document.getElementById("pipeline");
+  pipeline.hidden = statusFilter !== "applied";
+  if (pipeline.hidden) return;
+  // Counted here, not taken from the game progress, which updates after the list redraws.
+  const applications = Object.values(appliedPostings);
+  const countAt = (stageId) => applications.filter((application) => currentStage(application) === stageId).length;
+  const chips = [
+    { id: "all", label: `All ${applications.length}` },
+    ...STAGES.map((stage) => ({ id: stage.id, label: `${stage.icon} ${stage.shortName} ${countAt(stage.id)}` })),
+  ];
+  pipeline.replaceChildren(
+    ...chips.map((chip) => {
+      const button = createElement("button", `pipeline-chip stage-${chip.id}`, chip.label);
+      button.type = "button";
+      button.setAttribute("aria-pressed", String(stageFilter === chip.id));
+      button.addEventListener("click", () => {
+        stageFilter = chip.id;
+        resetAndRender();
+      });
+      return button;
+    }),
+  );
 }
 
 function createSkeletonItem() {
@@ -602,6 +672,7 @@ function trackedPostings() {
 
 function renderBrowse() {
   if (!postingsLoaded) return;
+  renderPipeline();
   const source = statusFilter === "all" ? allPostings : trackedPostings();
   const matching = source.filter((posting) => matchesFilters(posting) && matchesStatus(posting));
   const noun = matching.length === 1 ? "internship" : "internships";
@@ -908,6 +979,7 @@ function selectStatusTab(selectedTab) {
     tab.setAttribute("aria-selected", String(tab === selectedTab));
   }
   statusFilter = selectedTab.dataset.status;
+  stageFilter = "all";
   resetAndRender();
 }
 

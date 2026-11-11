@@ -7,6 +7,57 @@ const XP_FRESH_BONUS = 25;
 export const XP_PER_SAVE = 10;
 export const FRESH_POSTING_DAYS = 3;
 
+// Where an application stands. Applied is where every application starts; the
+// next three are a ladder, and Rejected can happen at any point. Reaching a stage
+// earns its reward once, and keeps it if the application is later rejected.
+export const STAGES = [
+  { id: "applied", name: "Applied", shortName: "Applied", icon: "✓", xp: 0, coins: 0 },
+  { id: "assessment", name: "Online Assessment", shortName: "OA", icon: "📝", xp: 50, coins: 10 },
+  { id: "interview", name: "Interview", shortName: "Interview", icon: "🎤", xp: 150, coins: 25 },
+  { id: "offer", name: "Offer", shortName: "Offer", icon: "🎉", xp: 500, coins: 100 },
+  { id: "rejected", name: "Rejected", shortName: "Rejected", icon: "🌧️", xp: 10, coins: 0 },
+];
+const STAGE_LADDER = ["applied", "assessment", "interview", "offer"];
+
+export function stageById(stageId) {
+  return STAGES.find((stage) => stage.id === stageId) ?? STAGES[0];
+}
+
+/** The stage an application is at now (older applications have none saved, so they're Applied). */
+export function currentStage(application) {
+  return stageById(application.stage).id;
+}
+
+/**
+ * Moves an application to a stage, returning the updated application.
+ * Moving forward records the new stage. Moving back to an earlier stage forgets
+ * the later ones (and any rejection). Rejected keeps the stages already reached.
+ */
+export function withStage(application, stageId, now = new Date()) {
+  const reached = { ...application.reached };
+  if (stageId === "rejected") {
+    reached.rejected ??= now.toISOString();
+  } else {
+    const index = STAGE_LADDER.indexOf(stageId);
+    for (const laterStage of [...STAGE_LADDER.slice(index + 1), "rejected"]) delete reached[laterStage];
+    if (stageId !== "applied") reached[stageId] ??= now.toISOString();
+  }
+  return { ...application, stage: stageId, reached };
+}
+
+/** Totals for the rewards every reached stage earns. */
+function stageRewards(applications) {
+  let xp = 0;
+  let coins = 0;
+  for (const application of applications) {
+    for (const stageId of Object.keys(application.reached ?? {})) {
+      xp += stageById(stageId).xp;
+      coins += stageById(stageId).coins;
+    }
+  }
+  return { xp, coins };
+}
+
 export const LEVELS = [
   { title: "Intern Hopeful", xp: 0 },
   { title: "Résumé Rookie", xp: 500 },
@@ -59,6 +110,9 @@ export const ACHIEVEMENTS = [
   { id: "on-fire", icon: "🔥", name: "On Fire", description: "Apply 3 days in a row", xp: 150, earned: (s) => s.bestStreak >= 3 },
   { id: "unstoppable", icon: "☄️", name: "Unstoppable", description: "Apply 7 days in a row", xp: 400, earned: (s) => s.bestStreak >= 7 },
   { id: "scout", icon: "🔭", name: "Scout", description: "Save 10 postings for later", xp: 50, earned: (s) => s.saveCount >= 10 },
+  { id: "first-assessment", icon: "📝", name: "First Assessment", description: "Reach an online assessment", xp: 75, earned: (s) => s.reached.assessment >= 1 },
+  { id: "first-interview", icon: "🎤", name: "First Interview", description: "Land an interview", xp: 150, earned: (s) => s.reached.interview >= 1 },
+  { id: "offer-unlocked", icon: "🏅", name: "Offer Unlocked", description: "Get an internship offer", xp: 500, earned: (s) => s.reached.offer >= 1 },
 ];
 
 /** Local calendar day as "YYYY-MM-DD", so days roll over at the player's midnight. */
@@ -144,6 +198,10 @@ export function computeProgress(applications, savedDates, { now = new Date(), fr
     roleIds: new Set(applications.flatMap((application) => application.roleIds ?? [])),
     metroIds: new Set(applications.flatMap((application) => application.metroIds ?? [])),
     bestStreak,
+    // How many applications have ever reached each stage.
+    reached: Object.fromEntries(
+      STAGES.map((stage) => [stage.id, applications.filter((application) => application.reached?.[stage.id]).length]),
+    ),
   };
 
   const achievements = ACHIEVEMENTS.map((achievement) => ({ ...achievement, unlocked: achievement.earned(stats) }));
@@ -163,7 +221,12 @@ export function computeProgress(applications, savedDates, { now = new Date(), fr
     return { ...quest, progress, done: progress >= quest.target };
   });
 
+  const stageReward = stageRewards(applications);
+  const stageCounts = Object.fromEntries(STAGES.map((stage) => [stage.id, 0]));
+  for (const application of applications) stageCounts[currentStage(application)] += 1;
+
   const xp =
+    stageReward.xp +
     stats.applicationCount * XP_PER_APPLICATION +
     stats.freshCount * XP_FRESH_BONUS +
     stats.saveCount * XP_PER_SAVE +
@@ -181,6 +244,8 @@ export function computeProgress(applications, savedDates, { now = new Date(), fr
     questCompletions,
     perfectQuestDays,
     trophyCount: achievements.filter((achievement) => achievement.unlocked).length,
+    stageCoins: stageReward.coins,
+    stageCounts,
     streakDays,
     todayKey,
     quests,
