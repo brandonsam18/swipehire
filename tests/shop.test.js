@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { computeProgress, previousDayKey } from "../game.js";
+import { computeProgress, dayKey, previousDayKey } from "../game.js";
+import { ITEMS, itemById, shopRotation } from "../items.js";
 import {
   MAX_STREAK_FREEZES,
   STREAK_FREEZE,
@@ -9,6 +10,7 @@ import {
   coinsEarned,
   daysToFreeze,
   emptyWallet,
+  equipItem,
   openChest,
   rollChestPrize,
   walletState,
@@ -64,11 +66,29 @@ test("buying spends coins, and items can't be bought twice or without enough coi
   const progress = computeProgress(applicationsOn(1, 2, 3, 4, 5, 6), [], { now: NOW });
   const wallet = emptyWallet();
   const before = walletState(progress, wallet).coins;
-  assert.ok(before >= 100, `expected at least 100 coins, had ${before}`);
-  assert.equal(buyItem("offer-hunter", progress, wallet, NOW), true);
-  assert.equal(walletState(progress, wallet).coins, before - 100);
-  assert.equal(buyItem("offer-hunter", progress, wallet, NOW), false);
-  assert.equal(buyItem("classic", progress, emptyWallet(), NOW), before >= 500);
+  const { daily } = shopRotation(dayKey(NOW));
+  const affordable = daily.map(itemById).find((item) => item.cost <= before);
+  assert.ok(affordable, `expected a daily item costing at most ${before} coins`);
+  assert.equal(buyItem(affordable.id, progress, wallet, NOW), true);
+  assert.equal(walletState(progress, wallet).coins, before - affordable.cost);
+  assert.equal(buyItem(affordable.id, progress, wallet, NOW), false);
+});
+
+test("only today's shop items can be bought, but streak freezes always can", () => {
+  const rich = { applicationCount: 0, freshCount: 0, saveCount: 0, questCompletions: 0, trophyCount: 0, level: 50, perfectQuestDays: 0 };
+  const { featured, daily } = shopRotation(dayKey(NOW));
+  const notToday = ITEMS.find((item) => item.cost > 0 && !featured.includes(item.id) && !daily.includes(item.id));
+  assert.equal(buyItem(notToday.id, rich, emptyWallet(), NOW), false);
+  assert.equal(buyItem(featured[0], rich, emptyWallet(), NOW), true);
+  assert.equal(buyItem(STREAK_FREEZE.id, rich, emptyWallet(), NOW), true);
+});
+
+test("equipping needs the item, and puts it in its own locker slot", () => {
+  const wallet = emptyWallet();
+  assert.equal(equipItem(wallet, "neon", new Set(["neon"])), true);
+  assert.equal(wallet.skin, "neon");
+  assert.equal(equipItem(wallet, "aurora", new Set()), false);
+  assert.equal(wallet.banner, "no-banner");
 });
 
 test("a bought streak freeze covers a missed day so the streak survives", () => {

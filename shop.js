@@ -1,7 +1,10 @@
-// Coins, the item shop, and loot chests. Like XP, coins earned are worked out
-// from the player's activity, so un-marking an application takes its coins
+// Coins, buying, loot chests, and equipping. Like XP, coins earned are worked
+// out from the player's activity, so un-marking an application takes its coins
 // back. The wallet only records what the player did with them: purchases,
 // opened chests (with their prize), streak freezes used, and what's equipped.
+// The items themselves are listed in items.js.
+import { dayKey } from "./game.js";
+import { DEFAULT_ITEM_IDS, RARITIES, SLOTS, itemById, pickChestItem, shopRotation, slotFor } from "./items.js";
 
 export const COINS = {
   perApplication: 10,
@@ -14,8 +17,6 @@ export const COINS = {
 
 export const APPLICATIONS_PER_CHEST = 5;
 export const MAX_STREAK_FREEZES = 2;
-export const DEFAULT_THEME_ID = "teal";
-
 export const STREAK_FREEZE = {
   id: "streak-freeze",
   icon: "🧊",
@@ -24,26 +25,9 @@ export const STREAK_FREEZE = {
   cost: 150,
 };
 
-// Themes swap the app's colors (see the [data-palette] rules in styles.css).
-export const THEMES = [
-  { id: DEFAULT_THEME_ID, name: "Teal & Chiffon", cost: 0, swatch: ["#3d8d7a", "#fffacd"] },
-  { id: "ocean", name: "Dreamy & Ocean", cost: 300, swatch: ["#006989", "#eaebed"] },
-  { id: "classic", name: "Classic Arcade", cost: 500, swatch: ["#8b5cf6", "#22d3ee"] },
-];
-
-// Titles show under the player's level. Chest-only titles can't be bought.
-export const TITLES = [
-  { id: "offer-hunter", name: "Offer Hunter", cost: 100 },
-  { id: "cover-letter-wizard", name: "Cover Letter Wizard", cost: 150 },
-  { id: "resume-royalty", name: "Résumé Royalty", cost: 200 },
-  { id: "swipe-master", name: "Swipe Master", cost: 250 },
-  { id: "lucky-swiper", name: "Lucky Swiper", cost: null },
-];
-
-const BUYABLE_ITEMS = [STREAK_FREEZE, ...THEMES.filter((theme) => theme.cost > 0), ...TITLES.filter((title) => title.cost)];
-
 export function emptyWallet() {
-  return { purchases: [], chests: [], freezesUsed: [], theme: DEFAULT_THEME_ID, title: null };
+  const equipped = Object.fromEntries(SLOTS.map((slot) => [slot.walletKey, slot.defaultId]));
+  return { purchases: [], chests: [], freezesUsed: [], ...equipped };
 }
 
 /** Coins earned from playing, before anything is spent. */
@@ -67,7 +51,7 @@ export function chestsEarned(progress) {
 export function walletState(progress, wallet) {
   const spent = wallet.purchases.reduce((total, purchase) => total + purchase.cost, 0);
   const chestCoins = wallet.chests.reduce((total, chest) => total + (chest.prize.coins ?? 0), 0);
-  const ownedIds = new Set([DEFAULT_THEME_ID]);
+  const ownedIds = new Set(DEFAULT_ITEM_IDS);
   let freezesGained = 0;
   for (const itemId of [...wallet.purchases.map((purchase) => purchase.id), ...wallet.chests.map((chest) => chest.prize.itemId)]) {
     if (itemId === STREAK_FREEZE.id) freezesGained += 1;
@@ -93,32 +77,37 @@ export function purchaseBlocker(item, state) {
   return null;
 }
 
+/** Whether an item is for sale on this day: streak freezes always are, cosmetics only in that day's shop. */
+export function isForSale(itemId, now = new Date()) {
+  if (itemId === STREAK_FREEZE.id) return true;
+  const { featured, daily } = shopRotation(dayKey(now));
+  return featured.includes(itemId) || daily.includes(itemId);
+}
+
 /** Buys an item, recording it in the wallet. Returns false if it can't be bought. */
 export function buyItem(itemId, progress, wallet, now = new Date()) {
-  const item = BUYABLE_ITEMS.find((candidate) => candidate.id === itemId);
-  if (!item || purchaseBlocker(item, walletState(progress, wallet))) return false;
+  const item = itemId === STREAK_FREEZE.id ? STREAK_FREEZE : itemById(itemId);
+  if (!item || !item.cost || !isForSale(itemId, now)) return false;
+  if (purchaseBlocker(item, walletState(progress, wallet))) return false;
   wallet.purchases.push({ id: item.id, cost: item.cost, at: now.toISOString() });
   return true;
 }
 
 /**
- * Picks a chest prize. Coins are most common; a freeze, title, or theme the
- * player doesn't have yet turns into coins if they already have it.
+ * Picks a chest prize: coins half the time, otherwise a streak freeze or a
+ * cosmetic the player doesn't have yet (common ones more often than legendary).
+ * Anything the player can't use turns into coins.
  * @param random a function returning a number in [0, 1), like Math.random
  */
 export function rollChestPrize(state, random = Math.random) {
   const coinPrize = (min, max) => ({ coins: min + Math.floor(random() * ((max - min) / 10 + 1)) * 10 });
   const roll = random();
-  if (roll < 0.55) return coinPrize(40, 120);
-  if (roll < 0.75) {
+  if (roll < 0.5) return coinPrize(40, 120);
+  if (roll < 0.65) {
     return state.freezes < MAX_STREAK_FREEZES ? { itemId: STREAK_FREEZE.id } : coinPrize(80, 150);
   }
-  if (roll < 0.93) {
-    const newTitles = TITLES.filter((title) => !state.ownedIds.has(title.id));
-    return newTitles.length > 0 ? { itemId: newTitles[Math.floor(random() * newTitles.length)].id } : coinPrize(100, 200);
-  }
-  const newThemes = THEMES.filter((theme) => !state.ownedIds.has(theme.id));
-  return newThemes.length > 0 ? { itemId: newThemes[Math.floor(random() * newThemes.length)].id } : coinPrize(200, 300);
+  const itemId = pickChestItem(state.ownedIds, random);
+  return itemId ? { itemId } : coinPrize(200, 300);
 }
 
 /** Opens one chest, recording its prize. Returns the prize, or null if no chest is waiting. */
@@ -134,14 +123,27 @@ export function openChest(progress, wallet, random = Math.random, now = new Date
 export function describePrize(prize) {
   if (prize.coins) return { icon: "🪙", text: `${prize.coins} coins` };
   if (prize.itemId === STREAK_FREEZE.id) return { icon: STREAK_FREEZE.icon, text: "A streak freeze" };
-  const theme = THEMES.find((candidate) => candidate.id === prize.itemId);
-  if (theme) return { icon: "🎨", text: `The ${theme.name} theme` };
-  const title = TITLES.find((candidate) => candidate.id === prize.itemId);
-  return { icon: "🏷️", text: `The title “${title?.name ?? prize.itemId}”` };
+  const item = itemById(prize.itemId);
+  if (!item) return { icon: "🎁", text: "A mystery item" };
+  const slot = slotFor(item.type);
+  return { icon: slot.icon, text: `${RARITIES[item.rarity].name} ${slot.name.toLowerCase()}: ${item.name}` };
 }
 
 export function titleName(titleId) {
-  return TITLES.find((title) => title.id === titleId)?.name ?? null;
+  return itemById(titleId)?.name ?? null;
+}
+
+/** Equips an owned item in its locker slot. Returns false if the player doesn't own it. */
+export function equipItem(wallet, itemId, ownedIds) {
+  const item = itemById(itemId);
+  if (!item || !ownedIds.has(itemId)) return false;
+  wallet[slotFor(item.type).walletKey] = itemId;
+  return true;
+}
+
+/** Takes off the player's title (titles are the one slot that can be left empty). */
+export function removeTitle(wallet) {
+  wallet[slotFor("title").walletKey] = null;
 }
 
 /**

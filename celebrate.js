@@ -13,6 +13,15 @@ const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 let toastStack;
 
 /**
+ * Where full-screen effects go: inside an open dialog (dialogs sit above the
+ * rest of the page, so effects added to the page would play behind them), or
+ * the page itself.
+ */
+export function effectsLayer() {
+  return document.querySelector("dialog[open]") ?? document.body;
+}
+
+/**
  * Shows a short message at the top of the screen, clear of the deck buttons.
  * Hovering over it (or tapping it) dismisses it early. Variants: "xp", "quest", "trophy", "level".
  */
@@ -47,7 +56,7 @@ export function burstConfetti(pieceCount = 120) {
   canvas.className = "confetti";
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  document.body.append(canvas);
+  effectsLayer().append(canvas);
   const context = canvas.getContext("2d");
 
   const pieces = Array.from({ length: pieceCount }, () => {

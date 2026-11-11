@@ -1644,6 +1644,458 @@ kbd {
   color: var(--muted);
 }
 
+/* Item shop and locker */
+
+.shop-dialog {
+  width: min(780px, calc(100vw - 32px));
+}
+
+.shop-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  background: var(--surface-muted);
+}
+
+.shop-tab {
+  flex: 1;
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shop-tab[aria-selected="true"] {
+  background: var(--game-gradient);
+  color: var(--brand-light);
+  box-shadow: var(--glow);
+}
+
+.shop-refresh {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: right;
+}
+
+.item-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.item-grid-featured {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+
+.item-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 16px;
+  background: var(--surface-muted);
+  border: 1px solid color-mix(in srgb, var(--rarity) 45%, transparent);
+  box-shadow: inset 0 3px 0 var(--rarity);
+}
+
+/* Epic and Legendary items glow in their rarity color. */
+.item-tile.rarity-epic,
+.item-tile.rarity-legendary {
+  box-shadow: inset 0 3px 0 var(--rarity), 0 0 18px color-mix(in srgb, var(--rarity) 35%, transparent);
+}
+
+.item-tile.equipped {
+  border: 2px solid var(--accent);
+}
+
+.item-tile .button {
+  margin-top: auto;
+  min-height: 36px;
+}
+
+.item-preview {
+  display: grid;
+  place-items: center;
+  height: 76px;
+  margin-bottom: 4px;
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.item-grid-featured .item-preview {
+  height: 110px;
+}
+
+.preview-icon {
+  font-size: 2.2rem;
+}
+
+.item-preview .theme-swatch {
+  width: 48px;
+  height: 48px;
+}
+
+.item-rarity {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--rarity);
+}
+
+.item-name {
+  margin: 0;
+  font-weight: 700;
+}
+
+.item-description,
+.item-owned {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.item-owned {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.locker-slot {
+  margin-bottom: 18px;
+}
+
+.locker-empty {
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* A tiny swipe card for skin previews. */
+.mini-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  width: 46px;
+  height: 60px;
+  padding: 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.item-grid-featured .mini-card {
+  width: 64px;
+  height: 84px;
+}
+
+.mini-card-line {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--text);
+  opacity: 0.6;
+}
+
+.mini-card-line.short {
+  width: 60%;
+}
+
+/* Card skins. Each applies to the swipe deck's cards and to the mini preview card.
+   Skins with their own background also set their own colors (text, buttons, tags),
+   so the card stays readable in every theme, light or dark. */
+
+.skin-paper .deck-card,
+.skin-pixel .deck-card,
+.skin-neon .deck-card {
+  color: var(--text);
+}
+
+.skin-paper .deck-card,
+.mini-card.skin-paper,
+.skin-pixel .deck-card,
+.mini-card.skin-pixel {
+  --surface: #fffdf6;
+  --border-strong: #b9b2a0;
+  --accent: #2b2b2b;
+  --accent-soft: #ece6d3;
+  --warning: #8a5a00;
+  --warning-border: #d9b76a;
+}
+
+.skin-neon .deck-card,
+.mini-card.skin-neon {
+  --surface: #151a30;
+  --border-strong: #39f3ff;
+  --accent: #39f3ff;
+  --accent-soft: #12324a;
+  --warning: #ffd36e;
+  --warning-border: #806a2a;
+}
+
+.skin-paper .deck-card,
+.mini-card.skin-paper {
+  --text: #2d2a26;
+  --muted: #6b645a;
+  --surface-muted: #efe9d6;
+  --border: #d9d1bb;
+  background:
+    linear-gradient(90deg, transparent 22px, rgba(220, 80, 80, 0.35) 22px 24px, transparent 24px),
+    repeating-linear-gradient(transparent 0 27px, #dbe4f0 27px 28px),
+    #fdfbf3;
+  border: 2px solid #2d2a26;
+  box-shadow: 5px 5px 0 #2d2a26;
+}
+
+.skin-neon .deck-card,
+.mini-card.skin-neon {
+  --text: #f1f5ff;
+  --muted: #a8b3cf;
+  --surface-muted: #1b1f38;
+  --border: #2a3050;
+  background: #0d1020;
+  border: 2px solid #39f3ff;
+  box-shadow: 0 0 10px #39f3ff, 0 0 28px rgba(255, 57, 212, 0.45), inset 0 0 18px rgba(57, 243, 255, 0.18);
+}
+
+.skin-pixel .deck-card,
+.mini-card.skin-pixel {
+  --text: #1f1f1f;
+  --muted: #555;
+  --surface-muted: #ffe9a8;
+  --border: #1f1f1f;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px) 0 0 / 8px 8px,
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px) 0 0 / 8px 8px,
+    #fff8e7;
+  border: 4px solid #1f1f1f;
+  border-radius: 4px;
+  box-shadow: 6px 6px 0 #1f1f1f;
+  font-family: "Space Grotesk", monospace;
+}
+
+.skin-holo .deck-card,
+.mini-card.skin-holo,
+.skin-gold-foil .deck-card,
+.mini-card.skin-gold-foil {
+  isolation: isolate;
+}
+
+.skin-holo .deck-card::before,
+.mini-card.skin-holo::before,
+.skin-gold-foil .deck-card::before,
+.mini-card.skin-gold-foil::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-size: 250% 250%;
+  animation: shine-sweep 4s linear infinite;
+}
+
+/* Holographic drifts like the Aurora banner: three rainbow bands of different
+   sizes glide back and forth with eased turns, so it never visibly restarts. */
+.skin-holo .deck-card::before,
+.mini-card.skin-holo::before {
+  background-image:
+    linear-gradient(115deg, transparent 25%, rgba(255, 0, 170, 0.22) 40%, transparent 55%),
+    linear-gradient(65deg, transparent 30%, rgba(0, 200, 255, 0.22) 45%, transparent 60%),
+    linear-gradient(140deg, transparent 35%, rgba(255, 230, 0, 0.2) 50%, transparent 65%);
+  background-size: 220% 220%, 260% 260%, 240% 240%;
+  animation: holo-drift 7s ease-in-out infinite alternate;
+}
+
+@keyframes holo-drift {
+  from {
+    background-position: 0% 0%, 100% 30%, 40% 100%;
+  }
+  to {
+    background-position: 100% 100%, 0% 70%, 80% 0%;
+  }
+}
+
+.skin-holo .deck-card,
+.mini-card.skin-holo {
+  border: 2px solid rgba(160, 120, 255, 0.6);
+}
+
+.skin-gold-foil .deck-card,
+.mini-card.skin-gold-foil {
+  border: 3px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(135deg, #a8740c, #ffd76a, #b8860b, #ffe9a3, #a8740c) border-box;
+  box-shadow: 0 0 22px rgba(246, 195, 67, 0.45), var(--shadow-md);
+}
+
+.skin-gold-foil .deck-card::before,
+.mini-card.skin-gold-foil::before {
+  background-image: linear-gradient(115deg, transparent 40%, rgba(255, 236, 160, 0.4) 50%, transparent 60%);
+}
+
+@keyframes shine-sweep {
+  from {
+    background-position: 100% 100%;
+  }
+  to {
+    background-position: 0% 0%;
+  }
+}
+
+/* Profile banners, on the player card and in previews. */
+
+.player-banner {
+  height: 64px;
+  margin: -18px -18px 14px;
+  border-radius: 18px 18px 0 0;
+}
+
+.mini-banner {
+  width: 100%;
+  height: 100%;
+}
+
+.banner-sunset {
+  background:
+    radial-gradient(circle at 50% 115%, #fff1a8 0 24%, #ffd36e 25% 28%, transparent 29%),
+    linear-gradient(to bottom, #3b2a6b 0%, #c2457a 45%, #ff8c5a 75%, #ffc47a 100%);
+}
+
+.banner-night-city {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60' preserveAspectRatio='xMidYMax slice'%3E%3Ccircle cx='172' cy='11' r='5' fill='%23f5f3ce'/%3E%3Cg fill='%230b0d1f'%3E%3Crect x='0' y='30' width='22' height='30'/%3E%3Crect x='24' y='18' width='16' height='42'/%3E%3Crect x='42' y='36' width='20' height='24'/%3E%3Crect x='64' y='12' width='14' height='48'/%3E%3Crect x='80' y='26' width='24' height='34'/%3E%3Crect x='106' y='20' width='14' height='40'/%3E%3Crect x='122' y='34' width='22' height='26'/%3E%3Crect x='146' y='16' width='18' height='44'/%3E%3Crect x='166' y='28' width='14' height='32'/%3E%3Crect x='182' y='22' width='18' height='38'/%3E%3C/g%3E%3Cg fill='%23ffd76a'%3E%3Crect x='28' y='24' width='2' height='2'/%3E%3Crect x='33' y='30' width='2' height='2'/%3E%3Crect x='28' y='38' width='2' height='2'/%3E%3Crect x='68' y='18' width='2' height='2'/%3E%3Crect x='72' y='26' width='2' height='2'/%3E%3Crect x='68' y='34' width='2' height='2'/%3E%3Crect x='84' y='32' width='2' height='2'/%3E%3Crect x='92' y='40' width='2' height='2'/%3E%3Crect x='110' y='26' width='2' height='2'/%3E%3Crect x='114' y='34' width='2' height='2'/%3E%3Crect x='150' y='22' width='2' height='2'/%3E%3Crect x='156' y='30' width='2' height='2'/%3E%3Crect x='150' y='40' width='2' height='2'/%3E%3Crect x='186' y='28' width='2' height='2'/%3E%3Crect x='192' y='36' width='2' height='2'/%3E%3Crect x='4' y='36' width='2' height='2'/%3E%3Crect x='46' y='42' width='2' height='2'/%3E%3Crect x='126' y='40' width='2' height='2'/%3E%3Crect x='170' y='34' width='2' height='2'/%3E%3C/g%3E%3C/svg%3E") bottom / cover no-repeat, linear-gradient(to bottom, #0f1636, #2c2a5a);
+}
+
+.banner-deep-space {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60' preserveAspectRatio='xMidYMid slice'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='12' cy='10' r='0.8'/%3E%3Ccircle cx='34' cy='42' r='1'/%3E%3Ccircle cx='58' cy='18' r='0.6'/%3E%3Ccircle cx='76' cy='50' r='0.8'/%3E%3Ccircle cx='92' cy='8' r='1'/%3E%3Ccircle cx='108' cy='36' r='0.6'/%3E%3Ccircle cx='122' cy='14' r='0.8'/%3E%3Ccircle cx='186' cy='48' r='1'/%3E%3Ccircle cx='190' cy='12' r='0.6'/%3E%3Ccircle cx='46' cy='30' r='0.6'/%3E%3Ccircle cx='20' cy='52' r='0.8'/%3E%3C/g%3E%3Ccircle cx='150' cy='30' r='14' fill='%23a855f7'/%3E%3Ccircle cx='145' cy='25' r='5' fill='%23d8b4fe' opacity='0.6'/%3E%3Cellipse cx='150' cy='30' rx='25' ry='6' fill='none' stroke='%23f5d0fe' stroke-width='2' transform='rotate(-15 150 30)'/%3E%3C/svg%3E") center / cover no-repeat,
+    radial-gradient(circle at 20% 40%, rgba(77, 212, 255, 0.25), transparent 45%),
+    linear-gradient(135deg, #050816, #1a1040);
+}
+
+.banner-aurora {
+  background:
+    linear-gradient(160deg, transparent 20%, rgba(110, 231, 160, 0.6) 35%, transparent 50%),
+    linear-gradient(200deg, transparent 30%, rgba(77, 212, 255, 0.5) 45%, transparent 60%),
+    linear-gradient(175deg, transparent 40%, rgba(168, 85, 247, 0.45) 55%, transparent 70%),
+    linear-gradient(#071226, #0d2140);
+  background-size: 220% 100%, 200% 100%, 240% 100%, 100% 100%;
+  animation: aurora-drift 8s ease-in-out infinite alternate;
+}
+
+@keyframes aurora-drift {
+  from {
+    background-position: 0% 0, 100% 0, 30% 0, 0 0;
+  }
+  to {
+    background-position: 100% 0, 0% 0, 80% 0, 0 0;
+  }
+}
+
+/* Celebrations drawn with elements (the rest use a canvas; see celebrations.js). */
+
+.celebration-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  animation: celebration-life 1.9s linear forwards;
+}
+
+@keyframes celebration-life {
+  0%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.rocket {
+  position: absolute;
+  left: 50%;
+  bottom: -90px;
+  font-size: 72px;
+  animation: rocket-fly 1.4s ease-in forwards;
+}
+
+@keyframes rocket-fly {
+  from {
+    transform: translateX(-50%) rotate(-45deg);
+  }
+  to {
+    transform: translateX(-50%) translateY(calc(-100vh - 200px)) rotate(-45deg);
+  }
+}
+
+.trophy-dance {
+  display: grid;
+  place-items: center;
+}
+
+.dancing-trophy {
+  grid-area: 1 / 1;
+  font-size: 96px;
+  animation: trophy-bounce 1.6s ease-in-out forwards;
+}
+
+@keyframes trophy-bounce {
+  0% {
+    transform: scale(0) rotate(-30deg);
+  }
+  25% {
+    transform: scale(1.2) rotate(10deg) translateY(-20px);
+  }
+  50% {
+    transform: scale(1) rotate(-10deg) translateY(0);
+  }
+  75% {
+    transform: scale(1.1) rotate(8deg) translateY(-14px);
+  }
+  100% {
+    transform: scale(1) rotate(0) translateY(0);
+  }
+}
+
+.trophy-star {
+  grid-area: 1 / 1;
+  font-size: 30px;
+  transform: rotate(var(--angle)) translateY(-120px) rotate(calc(-1 * var(--angle)));
+  animation: star-twinkle 1.6s ease-in-out forwards;
+}
+
+@keyframes star-twinkle {
+  0% {
+    scale: 0;
+  }
+  40% {
+    scale: 1.3;
+    rotate: 90deg;
+  }
+  100% {
+    scale: 1;
+    rotate: 180deg;
+  }
+}
+
 /* Loading and welcome screen */
 
 body.splash-open {
